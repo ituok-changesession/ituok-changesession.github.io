@@ -5,90 +5,128 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Okçuluk Seans Sistemi</title>
   <style>
-    /* RENK PALETLERİ (THEMES) */
+    /* RENK PALETLERİ VE KONSEPTLER */
     :root {
-      /* Varsayılan Tema (Modern İTÜ Lacivert) */
-      --bg-color: #f0f2f5;
-      --text-color: #333;
-      --card-bg: #ffffff;
-      --primary-color: #0b2559; /* İTÜ Laciverti */
-      --btn-text: #ffffff;
-      --success-color: #28a745;
-      --danger-color: #dc3545;
-      --disabled-color: #6c757d;
-      --disabled-bg: #e9ecef;
+      --bg-color: #f0f2f5; --text-color: #333; --card-bg: #ffffff;
+      --primary-color: #0b2559; --btn-text: #ffffff;
+      --success-color: #28a745; --danger-color: #dc3545;
+      --disabled-color: #6c757d; --disabled-bg: #e9ecef;
+      --bg-image: none;
     }
 
-    [data-theme="dark"] {
-      --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e;
-      --primary-color: #bb86fc; --btn-text: #000000; --disabled-bg: #2c2c2c;
+    /* Klasik Temalar */
+    [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --primary-color: #bb86fc; --btn-text: #000; }
+    [data-theme="forest"] { --bg-color: #e8f5e9; --text-color: #1b5e20; --card-bg: #ffffff; --primary-color: #2e7d32; --btn-text: #fff; }
+    
+    /* KONSEPT 1: MINECRAFT */
+    [data-theme="minecraft"] {
+      --bg-color: #7cbd6b; /* Çimen yeşili */
+      --text-color: #ffffff;
+      --card-bg: rgba(0, 0, 0, 0.6); /* Yarı saydam siyah kartlar */
+      --primary-color: #555555;
+      --bg-image: url('mc-arkaplan.png'); /* İstersen eklersin, şimdilik renk var */
     }
+    /* Minecraft Dekoru Aktif */
+    [data-theme="minecraft"] .decor-left { display: block; background-image: url('iskelet.png'); }
+    [data-theme="minecraft"] .decor-right { display: block; background-image: url('ari.png'); }
 
-    [data-theme="forest"] {
-      --bg-color: #e8f5e9; --text-color: #1b5e20; --card-bg: #ffffff;
-      --primary-color: #2e7d32; --btn-text: #ffffff; --disabled-bg: #c8e6c9;
+    /* KONSEPT 2: CADILAR BAYRAMI */
+    [data-theme="halloween"] {
+      --bg-color: #1a0b2e;
+      --text-color: #f5f5f5;
+      --card-bg: #ff6600; /* Bal kabağı turuncusu */
+      --primary-color: #000000;
+      --success-color: #440066; /* Koyu mor buton */
     }
+    [data-theme="halloween"] .decor-left { display: block; background-image: url('hayalet.png'); }
+    [data-theme="halloween"] .decor-right { display: block; background-image: url('yarasa.png'); }
 
-    [data-theme="sunset"] {
-      --bg-color: #fff3e0; --text-color: #3e2723; --card-bg: #ffffff;
-      --primary-color: #e64a19; --btn-text: #ffffff; --disabled-bg: #ffe0b2;
+    /* KONSEPT 3: ORTA ÇAĞ / TAVERNA */
+    [data-theme="medieval"] {
+      --bg-color: #2c1e16; /* Koyu ahşap */
+      --text-color: #3b2818;
+      --card-bg: #eaddc5; /* Parşömen rengi */
+      --primary-color: #8b0000; /* Kan kırmızısı */
+      --success-color: #5c4033; /* Kahverengi buton */
     }
+    [data-theme="medieval"] .decor-left { display: block; background-image: url('sovalye.png'); }
+    [data-theme="medieval"] .decor-right { display: block; background-image: url('ejderha.png'); }
 
-    [data-theme="minimal"] {
-      --bg-color: #ffffff; --text-color: #000000; --card-bg: #f8f9fa;
-      --primary-color: #000000; --btn-text: #ffffff; --disabled-bg: #e2e2e2;
-    }
 
     /* GENEL TASARIM */
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); background-image: var(--bg-image); color: var(--text-color); margin: 0; padding: 15px; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
     h1, h2 { text-align: center; }
     
-    /* GİRİŞ PANELİ */
-    #loginPanel { background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-top: 50px; }
-    input { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background: var(--card-bg); color: var(--text-color); }
+    #loginPanel { background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 100%; max-width: 400px; margin-top: 50px; }
+    input { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
     .btn { width: 100%; padding: 12px; margin-top: 20px; background: var(--primary-color); color: var(--btn-text); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; }
-    .btn:hover { opacity: 0.8; }
     #loginError { color: var(--danger-color); text-align: center; margin-top: 15px; font-weight: bold; }
 
-    /* DASHBOARD (3x3 PANEL) */
-    #dashboardPanel { display: none; width: 100%; max-width: 900px; }
-    .header-info { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
+    #dashboardPanel { display: none; width: 100%; max-width: 900px; z-index: 10; position: relative; }
+    .header-info { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);}
     
-    /* GRID SİSTEMİ */
+    /* 3x3 GRID SİSTEMİ (Mobilde de 3x3 kalacak) */
     .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
     .day-column { display: flex; flex-direction: column; gap: 15px; }
     .day-title { text-align: center; font-weight: bold; font-size: 18px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color); margin-bottom: 10px; }
     
-    .session-card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+    .session-card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); text-align: center; display: flex; flex-direction: column; justify-content: space-between; transition: 0.3s; }
     .session-time { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
     .session-stats { font-size: 14px; margin-bottom: 15px; }
     
     .action-btn { padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
-    .btn-current { background: var(--danger-color); color: white; cursor: not-allowed; }
+    .btn-current { background: var(--danger-color); color: white; cursor: not-allowed; opacity: 0.8; }
     .btn-full { background: var(--disabled-color); color: white; cursor: not-allowed; }
     .btn-available { background: var(--success-color); color: white; }
-    .btn-available:hover { transform: scale(1.02); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .btn-available:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+
+    /* DEKORASYON OBJELERİ (Sadece Konseptlerde Açılır) */
+    .decor-left, .decor-right {
+      position: fixed;
+      bottom: 60px; /* Temalar barının hemen üstü */
+      width: 250px;
+      height: 250px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: bottom center;
+      pointer-events: none; /* Yanlışlıkla tıklanmasın diye */
+      z-index: 1;
+      display: none; /* Varsayılan olarak gizli */
+    }
+    .decor-left { left: 2%; }
+    .decor-right { right: 2%; }
 
     /* TEMA DEĞİŞTİRİCİ BAR */
-    .theme-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 10px 0; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-    .theme-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid #ccc; transition: transform 0.2s; }
+    .theme-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 10px 0; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); z-index: 20; }
+    .theme-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.2); transition: transform 0.2s; background-size: cover; background-position: center; }
     .theme-dot:hover { transform: scale(1.2); }
     
-    /* Tema Noktası Renkleri */
-    .dot-default { background: #0b2559; }
-    .dot-dark { background: #121212; }
-    .dot-forest { background: #2e7d32; }
-    .dot-sunset { background: #e64a19; }
-    .dot-minimal { background: #ffffff; }
+    .dot-default { background-color: #0b2559; }
+    .dot-dark { background-color: #121212; }
+    .dot-forest { background-color: #2e7d32; }
+    /* Konsept Butonları */
+    .dot-mc { background-image: url('cimen.png'); background-color: #7cbd6b; border-radius: 8px; /* MC bloğu karemsi olsun */ }
+    .dot-hw { background-image: url('kabak.png'); background-color: #ff6600; }
+    .dot-md { background-image: url('kalkan.png'); background-color: #8b0000; }
 
-    /* MOBİL UYUM */
+    /* MOBİL İÇİN 3X3 SIKIŞTIRMA AYARLARI */
     @media (max-width: 768px) {
-      .grid-container { grid-template-columns: 1fr; }
-      .day-column { background: rgba(0,0,0,0.03); padding: 10px; border-radius: 8px; }
+      .grid-container { gap: 5px; }
+      .day-column { gap: 8px; }
+      .session-card { padding: 8px; }
+      .day-title { font-size: 14px; }
+      .session-time { font-size: 13px; }
+      .session-stats { font-size: 11px; margin-bottom: 8px; }
+      .action-btn { font-size: 11px; padding: 8px 2px; }
+      /* Mobilde ekran küçük olduğu için dekorları gizliyoruz ki yazıları kapatmasın */
+      .decor-left, .decor-right { display: none !important; }
     }
   </style>
 </head>
 <body>
+
+  <div class="decor-left"></div>
+  <div class="decor-right"></div>
 
   <div id="loginPanel">
     <h2>Sisteme Giriş</h2>
@@ -100,34 +138,30 @@
 
   <div id="dashboardPanel">
     <div class="header-info">
-      Hoş geldin, <span id="displayUser" style="color: var(--primary-color);"></span><br>
-      Mevcut Seansın: <span id="displaySession" style="color: var(--danger-color);"></span>
+      Kullanıcı: <span id="displayUser" style="color: var(--primary-color);"></span><br>
+      Seansın: <span id="displaySession" style="text-decoration: underline;"></span>
     </div>
-    
-    <div class="grid-container" id="gridContainer">
-      </div>
+    <div class="grid-container" id="gridContainer"></div>
   </div>
 
   <div class="theme-bar">
-    <div class="theme-dot dot-default" onclick="setTheme('default')" title="İTÜ Klasik"></div>
-    <div class="theme-dot dot-dark" onclick="setTheme('dark')" title="Karanlık Mod"></div>
+    <div class="theme-dot dot-default" onclick="setTheme('default')" title="Klasik"></div>
+    <div class="theme-dot dot-dark" onclick="setTheme('dark')" title="Gece"></div>
     <div class="theme-dot dot-forest" onclick="setTheme('forest')" title="Orman"></div>
-    <div class="theme-dot dot-sunset" onclick="setTheme('sunset')" title="Gün Batımı"></div>
-    <div class="theme-dot dot-minimal" onclick="setTheme('minimal')" title="Minimal"></div>
+    <div class="theme-dot dot-mc" onclick="setTheme('minecraft')" title="Minecraft"></div>
+    <div class="theme-dot dot-hw" onclick="setTheme('halloween')" title="Cadılar Bayramı"></div>
+    <div class="theme-dot dot-md" onclick="setTheme('medieval')" title="Orta Çağ"></div>
   </div>
 
   <script>
-    // DİKKAT: YENİ ALDIĞIN URL'Yİ BURAYA YAPIŞTIR!
+    // URL'Nİ BURAYA YAPIŞTIR
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFOW_szr3ocHZ3v2izx69BCndzrgfEe8fzD9kqZkAHIwX6iB_Nj2cUsmPKNI4_quhb0g/exec';
     
-    // Global değişkenler
     let currentUser = { name: '', no: '', currentSession: '' };
-    
     const days = ["Çarşamba", "Perşembe", "Cuma"];
     const times = ["16.00-17.00", "17.10-18.10", "18.20-19.20"];
-    const dbTimes = ["16.00", "17.10", "18.20"]; // Excel'deki isimlerle eşleşmesi için
+    const dbTimes = ["16.00", "17.10", "18.20"];
 
-    // GİRİŞ YAPMA FONKSİYONU
     function login() {
       const name = document.getElementById('studentName').value;
       const no = document.getElementById('studentNo').value;
@@ -136,129 +170,19 @@
 
       if(!name || no.length !== 9) { err.textContent = "Geçerli isim ve numara giriniz."; return; }
 
-      btn.textContent = "Kontrol ediliyor...";
-      btn.disabled = true;
-      err.textContent = "";
+      btn.textContent = "Bağlanıyor...";
+      btn.disabled = true; err.textContent = "";
 
       fetch(`${SCRIPT_URL}?action=login&name=${encodeURIComponent(name)}&no=${encodeURIComponent(no)}`)
         .then(res => res.json())
         .then(data => {
           if(data.success) {
-            currentUser.name = name;
-            currentUser.no = no;
-            currentUser.currentSession = data.userSession;
-            
+            currentUser.name = name; currentUser.no = no; currentUser.currentSession = data.userSession;
             document.getElementById('loginPanel').style.display = 'none';
             document.getElementById('dashboardPanel').style.display = 'block';
             document.getElementById('displayUser').textContent = name.toUpperCase();
             document.getElementById('displaySession').textContent = currentUser.currentSession || "Atanmamış";
-            
             renderGrid(data.counts, data.maxCapacity);
           } else {
             err.textContent = data.message;
-            btn.textContent = "Giriş Yap";
-            btn.disabled = false;
-          }
-        })
-        .catch(error => {
-          err.textContent = "Bağlantı hatası!";
-          btn.textContent = "Giriş Yap";
-          btn.disabled = false;
-        });
-    }
-
-    // EKRANI ÇİZME FONKSİYONU
-    function renderGrid(counts, maxCapacity) {
-      const container = document.getElementById('gridContainer');
-      container.innerHTML = '';
-
-      days.forEach(day => {
-        // Her gün için bir sütun oluştur
-        const colDiv = document.createElement('div');
-        colDiv.className = 'day-column';
-        colDiv.innerHTML = `<div class="day-title">${day}</div>`;
-
-        times.forEach((timeDisplay, index) => {
-          // DB'de tuttuğumuz isim (Örn: Çarşamba 16.00)
-          const sessionName = `${day} ${dbTimes[index]}`;
-          const count = counts[sessionName] || 0;
-          const available = maxCapacity - count;
-          
-          const isCurrentSession = (currentUser.currentSession === sessionName);
-          const isFull = available <= 0;
-
-          let btnHtml = '';
-          if (isCurrentSession) {
-            btnHtml = `<button class="action-btn btn-current" disabled>Bu Seanstasınız</button>`;
-          } else if (isFull) {
-            btnHtml = `<button class="action-btn btn-full" disabled>Dolu</button>`;
-          } else {
-            btnHtml = `<button class="action-btn btn-available" onclick="changeSession('${sessionName}')">Geçiş Yap</button>`;
-          }
-
-          const card = document.createElement('div');
-          card.className = 'session-card';
-          card.innerHTML = `
-            <div class="session-time">${timeDisplay}</div>
-            <div class="session-stats">
-              Kayıtlı: <b>${count}/${maxCapacity}</b><br>
-              Boş Yer: <b>${available}</b>
-            </div>
-            ${btnHtml}
-          `;
-          colDiv.appendChild(card);
-        });
-        container.appendChild(colDiv);
-      });
-    }
-
-    // SEANS DEĞİŞTİRME FONKSİYONU
-    function changeSession(newSession) {
-      if(!confirm(`${newSession} seansına geçmek istediğinize emin misiniz?`)) return;
-
-      // Tüm butonları geçici kitle
-      const buttons = document.querySelectorAll('.action-btn');
-      buttons.forEach(b => { b.disabled = true; b.textContent = "Bekleyiniz..."; });
-
-      fetch(`${SCRIPT_URL}?action=update&name=${encodeURIComponent(currentUser.name)}&no=${encodeURIComponent(currentUser.no)}&session=${encodeURIComponent(newSession)}`)
-        .then(res => res.json())
-        .then(data => {
-          if(data.success) {
-            // Başarılıysa sayfayı yenilemeden verileri tekrar çekip ekranı güncelle
-            alert("Seans başarıyla değiştirildi!");
-            refreshData();
-          } else {
-            alert("Hata: " + data.message);
-            refreshData();
-          }
-        })
-        .catch(err => alert("Bağlantı hatası yaşandı."));
-    }
-
-    // EKRANI ARKA PLANDA GÜNCELLEME
-    function refreshData() {
-      fetch(`${SCRIPT_URL}?action=login&name=${encodeURIComponent(currentUser.name)}&no=${encodeURIComponent(currentUser.no)}`)
-        .then(res => res.json())
-        .then(data => {
-          if(data.success) {
-            currentUser.currentSession = data.userSession;
-            document.getElementById('displaySession').textContent = currentUser.currentSession;
-            renderGrid(data.counts, data.maxCapacity);
-          }
-        });
-    }
-
-    // TEMA DEĞİŞTİRME SİSTEMİ
-    function setTheme(themeName) {
-      document.documentElement.setAttribute('data-theme', themeName);
-      // Kullanıcının tercihini tarayıcıya kaydet
-      localStorage.setItem('theme', themeName);
-    }
-
-    // Sayfa açıldığında kayıtlı temayı yükle
-    const savedTheme = localStorage.getItem('theme');
-    if(savedTheme) setTheme(savedTheme);
-
-  </script>
-</body>
-</html>
+            btn.textContent = "Giriş
