@@ -3,104 +3,262 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Okçuluk Seans Değişim Sistemi</title>
+  <title>Okçuluk Seans Sistemi</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-    h2 { text-align: center; color: #333; margin-top: 0; }
-    label { font-size: 14px; font-weight: 600; color: #555; display: block; margin-top: 15px; margin-bottom: 5px; }
-    input, select, button { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
-    button { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; margin-top: 25px; transition: background 0.3s; }
-    button:hover { background: #218838; }
-    button:disabled { background: #6c757d; cursor: not-allowed; }
-    #message { margin-top: 15px; font-weight: bold; text-align: center; min-height: 20px; }
-    .note { font-size: 12px; color: #777; text-align: center; margin-top: 15px; }
+    /* RENK PALETLERİ (THEMES) */
+    :root {
+      /* Varsayılan Tema (Modern İTÜ Lacivert) */
+      --bg-color: #f0f2f5;
+      --text-color: #333;
+      --card-bg: #ffffff;
+      --primary-color: #0b2559; /* İTÜ Laciverti */
+      --btn-text: #ffffff;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      --disabled-color: #6c757d;
+      --disabled-bg: #e9ecef;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e;
+      --primary-color: #bb86fc; --btn-text: #000000; --disabled-bg: #2c2c2c;
+    }
+
+    [data-theme="forest"] {
+      --bg-color: #e8f5e9; --text-color: #1b5e20; --card-bg: #ffffff;
+      --primary-color: #2e7d32; --btn-text: #ffffff; --disabled-bg: #c8e6c9;
+    }
+
+    [data-theme="sunset"] {
+      --bg-color: #fff3e0; --text-color: #3e2723; --card-bg: #ffffff;
+      --primary-color: #e64a19; --btn-text: #ffffff; --disabled-bg: #ffe0b2;
+    }
+
+    [data-theme="minimal"] {
+      --bg-color: #ffffff; --text-color: #000000; --card-bg: #f8f9fa;
+      --primary-color: #000000; --btn-text: #ffffff; --disabled-bg: #e2e2e2;
+    }
+
+    /* GENEL TASARIM */
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    h1, h2 { text-align: center; }
+    
+    /* GİRİŞ PANELİ */
+    #loginPanel { background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-top: 50px; }
+    input { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background: var(--card-bg); color: var(--text-color); }
+    .btn { width: 100%; padding: 12px; margin-top: 20px; background: var(--primary-color); color: var(--btn-text); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; }
+    .btn:hover { opacity: 0.8; }
+    #loginError { color: var(--danger-color); text-align: center; margin-top: 15px; font-weight: bold; }
+
+    /* DASHBOARD (3x3 PANEL) */
+    #dashboardPanel { display: none; width: 100%; max-width: 900px; }
+    .header-info { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
+    
+    /* GRID SİSTEMİ */
+    .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .day-column { display: flex; flex-direction: column; gap: 15px; }
+    .day-title { text-align: center; font-weight: bold; font-size: 18px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color); margin-bottom: 10px; }
+    
+    .session-card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+    .session-time { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+    .session-stats { font-size: 14px; margin-bottom: 15px; }
+    
+    .action-btn { padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
+    .btn-current { background: var(--danger-color); color: white; cursor: not-allowed; }
+    .btn-full { background: var(--disabled-color); color: white; cursor: not-allowed; }
+    .btn-available { background: var(--success-color); color: white; }
+    .btn-available:hover { transform: scale(1.02); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+
+    /* TEMA DEĞİŞTİRİCİ BAR */
+    .theme-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 10px 0; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+    .theme-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid #ccc; transition: transform 0.2s; }
+    .theme-dot:hover { transform: scale(1.2); }
+    
+    /* Tema Noktası Renkleri */
+    .dot-default { background: #0b2559; }
+    .dot-dark { background: #121212; }
+    .dot-forest { background: #2e7d32; }
+    .dot-sunset { background: #e64a19; }
+    .dot-minimal { background: #ffffff; }
+
+    /* MOBİL UYUM */
+    @media (max-width: 768px) {
+      .grid-container { grid-template-columns: 1fr; }
+      .day-column { background: rgba(0,0,0,0.03); padding: 10px; border-radius: 8px; }
+    }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h2>Seans İşlemleri</h2>
-    <form id="sessionForm">
-      
-      <label>İsim Soyisim</label>
-      <input type="text" id="name" required placeholder="Sistemdeki tam adınız">
+  <div id="loginPanel">
+    <h2>Sisteme Giriş</h2>
+    <input type="text" id="studentName" placeholder="İsim Soyisim" required>
+    <input type="text" id="studentNo" placeholder="9 Haneli Öğrenci No" maxlength="9" required>
+    <button class="btn" id="loginBtn" onclick="login()">Giriş Yap</button>
+    <div id="loginError"></div>
+  </div>
 
-      <label>Öğrenci Numarası</label>
-      <input type="text" id="studentNo" required pattern="\d{9}" maxlength="9" placeholder="9 Haneli Öğrenci No">
-
-      <label>Geçmek İstediğiniz Seans</label>
-      <select id="sessionSelect" required>
-        <option value="">Boş seanslar aranıyor...</option>
-      </select>
-
-      <button type="submit" id="submitBtn">Seansımı Değiştir</button>
-    </form>
+  <div id="dashboardPanel">
+    <div class="header-info">
+      Hoş geldin, <span id="displayUser" style="color: var(--primary-color);"></span><br>
+      Mevcut Seansın: <span id="displaySession" style="color: var(--danger-color);"></span>
+    </div>
     
-    <div id="message"></div>
-    <div class="note">Mevcut kontenjanlara göre sadece uygun seanslar listelenmektedir.</div>
+    <div class="grid-container" id="gridContainer">
+      </div>
+  </div>
+
+  <div class="theme-bar">
+    <div class="theme-dot dot-default" onclick="setTheme('default')" title="İTÜ Klasik"></div>
+    <div class="theme-dot dot-dark" onclick="setTheme('dark')" title="Karanlık Mod"></div>
+    <div class="theme-dot dot-forest" onclick="setTheme('forest')" title="Orman"></div>
+    <div class="theme-dot dot-sunset" onclick="setTheme('sunset')" title="Gün Batımı"></div>
+    <div class="theme-dot dot-minimal" onclick="setTheme('minimal')" title="Minimal"></div>
   </div>
 
   <script>
+    // DİKKAT: YENİ ALDIĞIN URL'Yİ BURAYA YAPIŞTIR!
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFOW_szr3ocHZ3v2izx69BCndzrgfEe8fzD9kqZkAHIwX6iB_Nj2cUsmPKNI4_quhb0g/exec';
     
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxAvmhHqlzOCGYI6M2k82HIxbaDgocdyOk_D4Y2-2Nnv5_q0rj_LDHiiU2XxLDoj3jhPQ/exec';
+    // Global değişkenler
+    let currentUser = { name: '', no: '', currentSession: '' };
+    
+    const days = ["Çarşamba", "Perşembe", "Cuma"];
+    const times = ["16.00-17.00", "17.10-18.10", "18.20-19.20"];
+    const dbTimes = ["16.00", "17.10", "18.20"]; // Excel'deki isimlerle eşleşmesi için
 
-    const select = document.getElementById('sessionSelect');
-    const messageDiv = document.getElementById('message');
-    const btn = document.getElementById('submitBtn');
-
-    // Site açıldığında Google Sheets'ten müsait seansları çek
-    fetch(scriptURL + '?action=getSessions')
-      .then(response => response.json())
-      .then(data => {
-        select.innerHTML = '<option value="">Bir seans seçin...</option>';
-        data.forEach(session => {
-          let opt = document.createElement('option');
-          opt.value = session.name;
-          opt.textContent = `${session.name} (Boş Yer: ${session.available})`;
-          select.appendChild(opt);
-        });
-      })
-      .catch(err => {
-        select.innerHTML = '<option value="">Bağlantı hatası. Sayfayı yenileyin.</option>';
-      });
-
-    // Form gönderildiğinde veriyi Google Sheets'e yolla
-    document.getElementById('sessionForm').addEventListener('submit', e => {
-      e.preventDefault();
-      btn.disabled = true;
-      btn.textContent = 'İşleminiz Yapılıyor...';
-      messageDiv.textContent = '';
-
-      const name = document.getElementById('name').value;
+    // GİRİŞ YAPMA FONKSİYONU
+    function login() {
+      const name = document.getElementById('studentName').value;
       const no = document.getElementById('studentNo').value;
-      const session = document.getElementById('sessionSelect').value;
+      const btn = document.getElementById('loginBtn');
+      const err = document.getElementById('loginError');
 
-      // GET isteği oluştur
-      const url = `${scriptURL}?action=update&name=${encodeURIComponent(name)}&no=${encodeURIComponent(no)}&session=${encodeURIComponent(session)}`;
+      if(!name || no.length !== 9) { err.textContent = "Geçerli isim ve numara giriniz."; return; }
 
-      fetch(url)
-        .then(response => response.json())
+      btn.textContent = "Kontrol ediliyor...";
+      btn.disabled = true;
+      err.textContent = "";
+
+      fetch(`${SCRIPT_URL}?action=login&name=${encodeURIComponent(name)}&no=${encodeURIComponent(no)}`)
+        .then(res => res.json())
         .then(data => {
-          messageDiv.textContent = data.message;
-          messageDiv.style.color = data.success ? 'green' : 'red';
-          
           if(data.success) {
-            document.getElementById('sessionForm').reset();
-            btn.textContent = 'Başarılı!';
-            setTimeout(() => location.reload(), 2500); // 2.5 saniye sonra tabloyu güncellemek için sayfayı yeniler
+            currentUser.name = name;
+            currentUser.no = no;
+            currentUser.currentSession = data.userSession;
+            
+            document.getElementById('loginPanel').style.display = 'none';
+            document.getElementById('dashboardPanel').style.display = 'block';
+            document.getElementById('displayUser').textContent = name.toUpperCase();
+            document.getElementById('displaySession').textContent = currentUser.currentSession || "Atanmamış";
+            
+            renderGrid(data.counts, data.maxCapacity);
           } else {
+            err.textContent = data.message;
+            btn.textContent = "Giriş Yap";
             btn.disabled = false;
-            btn.textContent = 'Seansımı Değiştir';
           }
         })
-        .catch(err => {
-          messageDiv.textContent = 'Bir hata oluştu, lütfen tekrar deneyin.';
-          messageDiv.style.color = 'red';
+        .catch(error => {
+          err.textContent = "Bağlantı hatası!";
+          btn.textContent = "Giriş Yap";
           btn.disabled = false;
-          btn.textContent = 'Seansımı Değiştir';
         });
-    });
+    }
+
+    // EKRANI ÇİZME FONKSİYONU
+    function renderGrid(counts, maxCapacity) {
+      const container = document.getElementById('gridContainer');
+      container.innerHTML = '';
+
+      days.forEach(day => {
+        // Her gün için bir sütun oluştur
+        const colDiv = document.createElement('div');
+        colDiv.className = 'day-column';
+        colDiv.innerHTML = `<div class="day-title">${day}</div>`;
+
+        times.forEach((timeDisplay, index) => {
+          // DB'de tuttuğumuz isim (Örn: Çarşamba 16.00)
+          const sessionName = `${day} ${dbTimes[index]}`;
+          const count = counts[sessionName] || 0;
+          const available = maxCapacity - count;
+          
+          const isCurrentSession = (currentUser.currentSession === sessionName);
+          const isFull = available <= 0;
+
+          let btnHtml = '';
+          if (isCurrentSession) {
+            btnHtml = `<button class="action-btn btn-current" disabled>Bu Seanstasınız</button>`;
+          } else if (isFull) {
+            btnHtml = `<button class="action-btn btn-full" disabled>Dolu</button>`;
+          } else {
+            btnHtml = `<button class="action-btn btn-available" onclick="changeSession('${sessionName}')">Geçiş Yap</button>`;
+          }
+
+          const card = document.createElement('div');
+          card.className = 'session-card';
+          card.innerHTML = `
+            <div class="session-time">${timeDisplay}</div>
+            <div class="session-stats">
+              Kayıtlı: <b>${count}/${maxCapacity}</b><br>
+              Boş Yer: <b>${available}</b>
+            </div>
+            ${btnHtml}
+          `;
+          colDiv.appendChild(card);
+        });
+        container.appendChild(colDiv);
+      });
+    }
+
+    // SEANS DEĞİŞTİRME FONKSİYONU
+    function changeSession(newSession) {
+      if(!confirm(`${newSession} seansına geçmek istediğinize emin misiniz?`)) return;
+
+      // Tüm butonları geçici kitle
+      const buttons = document.querySelectorAll('.action-btn');
+      buttons.forEach(b => { b.disabled = true; b.textContent = "Bekleyiniz..."; });
+
+      fetch(`${SCRIPT_URL}?action=update&name=${encodeURIComponent(currentUser.name)}&no=${encodeURIComponent(currentUser.no)}&session=${encodeURIComponent(newSession)}`)
+        .then(res => res.json())
+        .then(data => {
+          if(data.success) {
+            // Başarılıysa sayfayı yenilemeden verileri tekrar çekip ekranı güncelle
+            alert("Seans başarıyla değiştirildi!");
+            refreshData();
+          } else {
+            alert("Hata: " + data.message);
+            refreshData();
+          }
+        })
+        .catch(err => alert("Bağlantı hatası yaşandı."));
+    }
+
+    // EKRANI ARKA PLANDA GÜNCELLEME
+    function refreshData() {
+      fetch(`${SCRIPT_URL}?action=login&name=${encodeURIComponent(currentUser.name)}&no=${encodeURIComponent(currentUser.no)}`)
+        .then(res => res.json())
+        .then(data => {
+          if(data.success) {
+            currentUser.currentSession = data.userSession;
+            document.getElementById('displaySession').textContent = currentUser.currentSession;
+            renderGrid(data.counts, data.maxCapacity);
+          }
+        });
+    }
+
+    // TEMA DEĞİŞTİRME SİSTEMİ
+    function setTheme(themeName) {
+      document.documentElement.setAttribute('data-theme', themeName);
+      // Kullanıcının tercihini tarayıcıya kaydet
+      localStorage.setItem('theme', themeName);
+    }
+
+    // Sayfa açıldığında kayıtlı temayı yükle
+    const savedTheme = localStorage.getItem('theme');
+    if(savedTheme) setTheme(savedTheme);
+
   </script>
 </body>
 </html>
