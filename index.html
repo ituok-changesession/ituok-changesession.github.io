@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Okçuluk Seans Değişim Sistemi</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+    h2 { text-align: center; color: #333; margin-top: 0; }
+    label { font-size: 14px; font-weight: 600; color: #555; display: block; margin-top: 15px; margin-bottom: 5px; }
+    input, select, button { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+    button { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; margin-top: 25px; transition: background 0.3s; }
+    button:hover { background: #218838; }
+    button:disabled { background: #6c757d; cursor: not-allowed; }
+    #message { margin-top: 15px; font-weight: bold; text-align: center; min-height: 20px; }
+    .note { font-size: 12px; color: #777; text-align: center; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Seans İşlemleri</h2>
+    <form id="sessionForm">
+      
+      <label>İsim Soyisim</label>
+      <input type="text" id="name" required placeholder="Sistemdeki tam adınız">
+
+      <label>Öğrenci Numarası</label>
+      <input type="text" id="studentNo" required pattern="\d{9}" maxlength="9" placeholder="9 Haneli Öğrenci No">
+
+      <label>Geçmek İstediğiniz Seans</label>
+      <select id="sessionSelect" required>
+        <option value="">Boş seanslar aranıyor...</option>
+      </select>
+
+      <button type="submit" id="submitBtn">Seansımı Değiştir</button>
+    </form>
+    
+    <div id="message"></div>
+    <div class="note">Mevcut kontenjanlara göre sadece uygun seanslar listelenmektedir.</div>
+  </div>
+
+  <script>
+    
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxAvmhHqlzOCGYI6M2k82HIxbaDgocdyOk_D4Y2-2Nnv5_q0rj_LDHiiU2XxLDoj3jhPQ/exec';
+
+    const select = document.getElementById('sessionSelect');
+    const messageDiv = document.getElementById('message');
+    const btn = document.getElementById('submitBtn');
+
+    // Site açıldığında Google Sheets'ten müsait seansları çek
+    fetch(scriptURL + '?action=getSessions')
+      .then(response => response.json())
+      .then(data => {
+        select.innerHTML = '<option value="">Bir seans seçin...</option>';
+        data.forEach(session => {
+          let opt = document.createElement('option');
+          opt.value = session.name;
+          opt.textContent = `${session.name} (Boş Yer: ${session.available})`;
+          select.appendChild(opt);
+        });
+      })
+      .catch(err => {
+        select.innerHTML = '<option value="">Bağlantı hatası. Sayfayı yenileyin.</option>';
+      });
+
+    // Form gönderildiğinde veriyi Google Sheets'e yolla
+    document.getElementById('sessionForm').addEventListener('submit', e => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = 'İşleminiz Yapılıyor...';
+      messageDiv.textContent = '';
+
+      const name = document.getElementById('name').value;
+      const no = document.getElementById('studentNo').value;
+      const session = document.getElementById('sessionSelect').value;
+
+      // GET isteği oluştur
+      const url = `${scriptURL}?action=update&name=${encodeURIComponent(name)}&no=${encodeURIComponent(no)}&session=${encodeURIComponent(session)}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          messageDiv.textContent = data.message;
+          messageDiv.style.color = data.success ? 'green' : 'red';
+          
+          if(data.success) {
+            document.getElementById('sessionForm').reset();
+            btn.textContent = 'Başarılı!';
+            setTimeout(() => location.reload(), 2500); // 2.5 saniye sonra tabloyu güncellemek için sayfayı yeniler
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'Seansımı Değiştir';
+          }
+        })
+        .catch(err => {
+          messageDiv.textContent = 'Bir hata oluştu, lütfen tekrar deneyin.';
+          messageDiv.style.color = 'red';
+          btn.disabled = false;
+          btn.textContent = 'Seansımı Değiştir';
+        });
+    });
+  </script>
+</body>
+</html>
