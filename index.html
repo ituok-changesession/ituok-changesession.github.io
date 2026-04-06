@@ -5,31 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Okçuluk Seans Sistemi</title>
   <style>
-    /* RENK PALETLERİ VE KONSEPTLER */
     :root {
       --bg-color: #f0f2f5; --text-color: #333; --card-bg: #ffffff;
       --primary-color: #0b2559; --btn-text: #ffffff;
       --success-color: #28a745; --danger-color: #dc3545;
-      --disabled-color: #6c757d; --disabled-bg: #e9ecef;
-      --bg-image: none;
+      --warning-color: #ff9800; --disabled-color: #6c757d;
+      --disabled-bg: #e9ecef; --bg-image: none;
     }
 
     [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --primary-color: #bb86fc; --btn-text: #000; }
     [data-theme="forest"] { --bg-color: #e8f5e9; --text-color: #1b5e20; --card-bg: #ffffff; --primary-color: #2e7d32; --btn-text: #fff; }
-    
     [data-theme="minecraft"] { --bg-color: #7cbd6b; --text-color: #ffffff; --card-bg: rgba(0, 0, 0, 0.6); --primary-color: #555555; }
     [data-theme="minecraft"] .decor-left { display: block; background-image: url('iskelet.png'); }
     [data-theme="minecraft"] .decor-right { display: block; background-image: url('ari.png'); }
-
     [data-theme="halloween"] { --bg-color: #1a0b2e; --text-color: #f5f5f5; --card-bg: #ff6600; --primary-color: #000000; --success-color: #440066; }
     [data-theme="halloween"] .decor-left { display: block; background-image: url('hayalet.png'); }
     [data-theme="halloween"] .decor-right { display: block; background-image: url('yarasa.png'); }
-
     [data-theme="medieval"] { --bg-color: #2c1e16; --text-color: #3b2818; --card-bg: #eaddc5; --primary-color: #8b0000; --success-color: #5c4033; }
     [data-theme="medieval"] .decor-left { display: block; background-image: url('sovalye.png'); }
     [data-theme="medieval"] .decor-right { display: block; background-image: url('ejderha.png'); }
 
-    /* GENEL TASARIM */
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); background-image: var(--bg-image); color: var(--text-color); margin: 0; padding: 15px; padding-bottom: 80px; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
     h1, h2 { text-align: center; }
     
@@ -39,8 +34,13 @@
     #loginError { color: var(--danger-color); text-align: center; margin-top: 15px; font-weight: bold; }
 
     #dashboardPanel { display: none; width: 100%; max-width: 900px; position: relative; z-index: 50; }
-    .header-info { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);}
+    .header-info { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
     
+    /* YENİ EKLENEN İPTAL BUTONU TASARIMI */
+    .cancel-btn { background-color: var(--warning-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 15px; font-size: 15px; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .cancel-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+    .cancel-btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.8; }
+
     .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
     .day-column { display: flex; flex-direction: column; gap: 15px; }
     .day-title { text-align: center; font-weight: bold; font-size: 18px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color); margin-bottom: 10px; }
@@ -55,14 +55,9 @@
     .btn-available { background: var(--success-color); color: white; }
     .btn-available:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
 
-    /* DEKORASYON OBJELERİ (z-index -1 yapıldı ki hiçbir şeye engel olmasın) */
-    .decor-left, .decor-right {
-      position: fixed; bottom: 60px; width: 250px; height: 250px; background-size: contain; background-repeat: no-repeat; background-position: bottom center;
-      pointer-events: none; z-index: -1; display: none;
-    }
+    .decor-left, .decor-right { position: fixed; bottom: 60px; width: 250px; height: 250px; background-size: contain; background-repeat: no-repeat; background-position: bottom center; pointer-events: none; z-index: -1; display: none; }
     .decor-left { left: 2%; } .decor-right { right: 2%; }
 
-    /* TEMA DEĞİŞTİRİCİ BAR */
     .theme-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 10px 0; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); z-index: 100; }
     .theme-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.2); transition: transform 0.2s; background-size: cover; background-position: center; }
     .theme-dot:hover { transform: scale(1.2); }
@@ -74,19 +69,11 @@
     .dot-hw { background-image: url('kabak.png'); background-color: #ff6600; }
     .dot-md { background-image: url('kalkan.png'); background-color: #8b0000; }
 
-    /* MOBİL GÖRÜNÜM AYARLARI */
     @media (max-width: 768px) {
-      .grid-container { gap: 5px; }
-      .day-column { gap: 8px; }
-      .session-card { padding: 8px; }
-      .day-title { font-size: 14px; }
-      .session-time { font-size: 13px; }
-      .session-stats { font-size: 11px; margin-bottom: 8px; }
+      .grid-container { gap: 5px; } .day-column { gap: 8px; } .session-card { padding: 8px; }
+      .day-title { font-size: 14px; } .session-time { font-size: 13px; } .session-stats { font-size: 11px; margin-bottom: 8px; }
       .action-btn { font-size: 11px; padding: 8px 2px; }
-      
-      /* DEKORLARI VE KONSEPT TEMALARI GİZLE */
-      .decor-left, .decor-right { display: none !important; }
-      .concept-theme { display: none !important; } 
+      .decor-left, .decor-right { display: none !important; } .concept-theme { display: none !important; } 
     }
   </style>
 </head>
@@ -106,7 +93,10 @@
   <div id="dashboardPanel">
     <div class="header-info">
       Kullanıcı: <span id="displayUser" style="color: var(--primary-color);"></span><br>
-      Seansın: <span id="displaySession" style="text-decoration: underline;"></span>
+      Seansın: <span id="displaySession" style="text-decoration: underline; font-weight: 800;"></span><br>
+      <button id="btn-cancel-session" class="cancel-btn" onclick="changeSession('Gelmeyecek', 'btn-cancel-session')">
+        🛑 Bu Hafta Gelemeyeceğim
+      </button>
     </div>
     <div class="grid-container" id="gridContainer"></div>
   </div>
@@ -115,7 +105,6 @@
     <div class="theme-dot dot-default" onclick="setTheme('default')" title="Klasik"></div>
     <div class="theme-dot dot-dark" onclick="setTheme('dark')" title="Gece"></div>
     <div class="theme-dot dot-forest" onclick="setTheme('forest')" title="Orman"></div>
-    
     <div class="theme-dot dot-mc concept-theme" onclick="setTheme('minecraft')" title="Minecraft"></div>
     <div class="theme-dot dot-hw concept-theme" onclick="setTheme('halloween')" title="Cadılar Bayramı"></div>
     <div class="theme-dot dot-md concept-theme" onclick="setTheme('medieval')" title="Orta Çağ"></div>
@@ -123,7 +112,7 @@
 
   <script>
     // DİKKAT: YENİ ALDIĞIN URL'Yİ BURAYA YAPIŞTIR!
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQH6OHyi0ExX11uQrjVOSmUESk6CxRAXVVkmeqZMozIJRwSJdpO-T1Vpu1LNyVanGu_Q/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLt76qcjSqSbc78ykZEWhn6FkXnHDOxdBEtXCIb1hNhlHQ2ipuRiu-5IkWJk7OUWPIBA/exec';
     
     let currentUser = { name: '', no: '', currentSession: '' };
     const days = ["Çarşamba", "Perşembe", "Cuma"];
@@ -149,13 +138,32 @@
             document.getElementById('loginPanel').style.display = 'none';
             document.getElementById('dashboardPanel').style.display = 'block';
             document.getElementById('displayUser').textContent = name.toUpperCase();
-            document.getElementById('displaySession').textContent = currentUser.currentSession || "Atanmamış";
+            
+            updateHeaderStatus();
             renderGrid(data.counts, data.maxCapacity);
           } else {
             err.textContent = data.message;
             btn.textContent = "Giriş Yap"; btn.disabled = false;
           }
         }).catch(() => { err.textContent = "Bağlantı hatası! URL'yi kontrol et."; btn.textContent = "Giriş Yap"; btn.disabled = false; });
+    }
+
+    // Üst kısımdaki yazıyı ve butonun aktifliğini güncelleyen fonksiyon
+    function updateHeaderStatus() {
+      const sessionDisplay = document.getElementById('displaySession');
+      const cancelBtn = document.getElementById('btn-cancel-session');
+      
+      sessionDisplay.textContent = currentUser.currentSession || "Atanmamış";
+      
+      if(currentUser.currentSession === "Gelmeyecek") {
+        sessionDisplay.style.color = "var(--danger-color)";
+        cancelBtn.disabled = true;
+        cancelBtn.textContent = "Bu Hafta Gelmeyeceğiniz İşlendi";
+      } else {
+        sessionDisplay.style.color = "var(--text-color)";
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = "🛑 Bu Hafta Gelemeyeceğim";
+      }
     }
 
     function renderGrid(counts, maxCapacity) {
@@ -175,7 +183,6 @@
           const isCurrentSession = (currentUser.currentSession === sessionName);
           const isFull = available <= 0;
 
-          // Buton ID'sindeki boşluk ve Türkçe karakter hatalarını önlemek için sadeleştirdik
           const safeId = `btn-${index}-${day.substring(0,3)}`;
 
           let btnHtml = '';
@@ -202,10 +209,10 @@
 
     function changeSession(newSession, btnId) {
       const clickedBtn = document.getElementById(btnId);
-      const allButtons = document.querySelectorAll('.action-btn');
+      const allButtons = document.querySelectorAll('.action-btn, .cancel-btn'); // Tüm butonları kitle
       
       allButtons.forEach(b => b.disabled = true);
-      clickedBtn.textContent = "Geçiliyor...";
+      clickedBtn.textContent = "İşleniyor...";
       clickedBtn.style.background = "#ffc107";
       clickedBtn.style.color = "#000";
 
@@ -228,7 +235,7 @@
         .then(data => {
           if(data.success) {
             currentUser.currentSession = data.userSession;
-            document.getElementById('displaySession').textContent = currentUser.currentSession;
+            updateHeaderStatus();
             renderGrid(data.counts, data.maxCapacity);
           }
         });
@@ -237,8 +244,6 @@
     function setTheme(themeName) {
       document.documentElement.setAttribute('data-theme', themeName);
       localStorage.setItem('theme', themeName);
-      
-      // Mobilde konsept temada kalmış birini düzeltmek için güvenlik önlemi
       if(window.innerWidth <= 768 && (themeName === 'minecraft' || themeName === 'halloween' || themeName === 'medieval')) {
          document.documentElement.setAttribute('data-theme', 'default');
          localStorage.setItem('theme', 'default');
@@ -246,9 +251,7 @@
     }
 
     const savedTheme = localStorage.getItem('theme');
-    if(savedTheme) {
-      setTheme(savedTheme);
-    }
+    if(savedTheme) setTheme(savedTheme);
 
   </script>
 </body>
