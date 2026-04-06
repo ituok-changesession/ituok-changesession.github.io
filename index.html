@@ -9,8 +9,7 @@
       --bg-color: #f0f2f5; --text-color: #333; --card-bg: #ffffff;
       --primary-color: #0b2559; --btn-text: #ffffff;
       --success-color: #28a745; --danger-color: #dc3545;
-      --warning-color: #ff9800; --disabled-color: #6c757d;
-      --disabled-bg: #e9ecef; --bg-image: none;
+      --disabled-color: #6c757d; --disabled-bg: #e9ecef; --bg-image: none;
     }
 
     [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --primary-color: #bb86fc; --btn-text: #000; }
@@ -36,11 +35,6 @@
     #dashboardPanel { display: none; width: 100%; max-width: 900px; position: relative; z-index: 50; }
     .header-info { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
     
-    /* YENİ EKLENEN İPTAL BUTONU TASARIMI */
-    .cancel-btn { background-color: var(--warning-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 15px; font-size: 15px; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-    .cancel-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-    .cancel-btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.8; }
-
     .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
     .day-column { display: flex; flex-direction: column; gap: 15px; }
     .day-title { text-align: center; font-weight: bold; font-size: 18px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color); margin-bottom: 10px; }
@@ -54,6 +48,12 @@
     .btn-full { background: var(--disabled-color); color: white; cursor: not-allowed; }
     .btn-available { background: var(--success-color); color: white; }
     .btn-available:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+
+    /* İPTAL BUTONU İÇİN YENİ KONTEYNER VE TASARIM */
+    .cancel-container { display: flex; justify-content: center; margin-top: 30px; margin-bottom: 20px; }
+    .cancel-btn { background-color: var(--danger-color); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .cancel-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.3); }
+    .cancel-btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.8; }
 
     .decor-left, .decor-right { position: fixed; bottom: 60px; width: 250px; height: 250px; background-size: contain; background-repeat: no-repeat; background-position: bottom center; pointer-events: none; z-index: -1; display: none; }
     .decor-left { left: 2%; } .decor-right { right: 2%; }
@@ -73,6 +73,7 @@
       .grid-container { gap: 5px; } .day-column { gap: 8px; } .session-card { padding: 8px; }
       .day-title { font-size: 14px; } .session-time { font-size: 13px; } .session-stats { font-size: 11px; margin-bottom: 8px; }
       .action-btn { font-size: 11px; padding: 8px 2px; }
+      .cancel-btn { padding: 12px 20px; font-size: 14px; width: 100%; }
       .decor-left, .decor-right { display: none !important; } .concept-theme { display: none !important; } 
     }
   </style>
@@ -93,12 +94,16 @@
   <div id="dashboardPanel">
     <div class="header-info">
       Kullanıcı: <span id="displayUser" style="color: var(--primary-color);"></span><br>
-      Seansın: <span id="displaySession" style="text-decoration: underline; font-weight: 800;"></span><br>
+      Seansın: <span id="displaySession" style="text-decoration: underline; font-weight: 800;"></span>
+    </div>
+    
+    <div class="grid-container" id="gridContainer"></div>
+
+    <div class="cancel-container">
       <button id="btn-cancel-session" class="cancel-btn" onclick="changeSession('Gelmeyecek', 'btn-cancel-session')">
         🛑 Bu Hafta Gelemeyeceğim
       </button>
     </div>
-    <div class="grid-container" id="gridContainer"></div>
   </div>
 
   <div class="theme-bar">
@@ -148,7 +153,6 @@
         }).catch(() => { err.textContent = "Bağlantı hatası! URL'yi kontrol et."; btn.textContent = "Giriş Yap"; btn.disabled = false; });
     }
 
-    // Üst kısımdaki yazıyı ve butonun aktifliğini güncelleyen fonksiyon
     function updateHeaderStatus() {
       const sessionDisplay = document.getElementById('displaySession');
       const cancelBtn = document.getElementById('btn-cancel-session');
@@ -209,12 +213,18 @@
 
     function changeSession(newSession, btnId) {
       const clickedBtn = document.getElementById(btnId);
-      const allButtons = document.querySelectorAll('.action-btn, .cancel-btn'); // Tüm butonları kitle
+      const allButtons = document.querySelectorAll('.action-btn, .cancel-btn'); 
       
       allButtons.forEach(b => b.disabled = true);
       clickedBtn.textContent = "İşleniyor...";
-      clickedBtn.style.background = "#ffc107";
-      clickedBtn.style.color = "#000";
+      
+      // Gelmeyeceğim butonuna basıldıysa uyarı rengi ver, normal seansa tıklandıysa sarı yap
+      if(newSession === "Gelmeyecek") {
+        clickedBtn.style.background = "var(--danger-color)";
+      } else {
+        clickedBtn.style.background = "#ffc107";
+        clickedBtn.style.color = "#000";
+      }
 
       fetch(`${SCRIPT_URL}?action=update&name=${encodeURIComponent(currentUser.name)}&no=${encodeURIComponent(currentUser.no)}&session=${encodeURIComponent(newSession)}`)
         .then(res => res.json())
