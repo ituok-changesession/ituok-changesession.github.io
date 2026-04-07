@@ -49,7 +49,6 @@
     .btn-available { background: var(--success-color); color: white; }
     .btn-available:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
 
-    /* İPTAL BUTONU İÇİN YENİ KONTEYNER VE TASARIM */
     .cancel-container { display: flex; justify-content: center; margin-top: 30px; margin-bottom: 20px; }
     .cancel-btn { background-color: var(--danger-color); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
     .cancel-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.3); }
@@ -99,7 +98,7 @@
     
     <div class="grid-container" id="gridContainer"></div>
 
-    <div class="cancel-container">
+    <div class="cancel-container" id="cancelContainer">
       <button id="btn-cancel-session" class="cancel-btn" onclick="changeSession('Gelmeyecek', 'btn-cancel-session')">
         🛑 Bu Hafta Gelemeyeceğim
       </button>
@@ -120,6 +119,8 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLt76qcjSqSbc78ykZEWhn6FkXnHDOxdBEtXCIb1hNhlHQ2ipuRiu-5IkWJk7OUWPIBA/exec';
     
     let currentUser = { name: '', no: '', currentSession: '' };
+    let isAdminMode = false; // Admin modu kontrolü eklendi
+    
     const days = ["Çarşamba", "Perşembe", "Cuma"];
     const times = ["16.00-17.00", "17.10-18.10", "18.20-19.20"];
     const dbTimes = ["16.00", "17.10", "18.20"];
@@ -139,12 +140,27 @@
         .then(res => res.json())
         .then(data => {
           if(data.success) {
-            currentUser.name = name; currentUser.no = no; currentUser.currentSession = data.userSession;
+            isAdminMode = data.isAdmin || false; // Backend'den admin mi bilgisi geldi
+            
+            currentUser.name = name; 
+            currentUser.no = no; 
+            currentUser.currentSession = data.userSession;
+            
             document.getElementById('loginPanel').style.display = 'none';
             document.getElementById('dashboardPanel').style.display = 'block';
-            document.getElementById('displayUser').textContent = name.toUpperCase();
+
+            if(isAdminMode) {
+              document.getElementById('displayUser').textContent = "YÖNETİCİ (ADMİN)";
+              document.getElementById('displaySession').textContent = "Tüm Seansların Özeti";
+              document.getElementById('displaySession').style.color = "var(--primary-color)";
+              document.getElementById('displaySession').style.textDecoration = "none";
+              document.getElementById('cancelContainer').style.display = 'none'; // İptal butonunu komple gizle
+            } else {
+              document.getElementById('displayUser').textContent = name.toUpperCase();
+              document.getElementById('cancelContainer').style.display = 'flex';
+              updateHeaderStatus();
+            }
             
-            updateHeaderStatus();
             renderGrid(data.counts, data.maxCapacity);
           } else {
             err.textContent = data.message;
@@ -154,6 +170,8 @@
     }
 
     function updateHeaderStatus() {
+      if(isAdminMode) return; // Adminse burası çalışmasın
+      
       const sessionDisplay = document.getElementById('displaySession');
       const cancelBtn = document.getElementById('btn-cancel-session');
       
@@ -190,12 +208,19 @@
           const safeId = `btn-${index}-${day.substring(0,3)}`;
 
           let btnHtml = '';
-          if (isCurrentSession) {
-            btnHtml = `<button class="action-btn btn-current" disabled>Seanstasın</button>`;
-          } else if (isFull) {
-            btnHtml = `<button class="action-btn btn-full" disabled>Dolu</button>`;
+          
+          if(isAdminMode) {
+            // ADMİN İÇİN BUTON TASARIMI
+            btnHtml = `<button class="action-btn" style="background: var(--primary-color); color: white; cursor: default;" disabled>İzleme Modu</button>`;
           } else {
-            btnHtml = `<button class="action-btn btn-available" id="${safeId}" onclick="changeSession('${sessionName}', '${safeId}')">Geçiş Yap</button>`;
+            // NORMAL KULLANICI İÇİN BUTON TASARIMI
+            if (isCurrentSession) {
+              btnHtml = `<button class="action-btn btn-current" disabled>Seanstasın</button>`;
+            } else if (isFull) {
+              btnHtml = `<button class="action-btn btn-full" disabled>Dolu</button>`;
+            } else {
+              btnHtml = `<button class="action-btn btn-available" id="${safeId}" onclick="changeSession('${sessionName}', '${safeId}')">Geçiş Yap</button>`;
+            }
           }
 
           const card = document.createElement('div');
@@ -212,13 +237,14 @@
     }
 
     function changeSession(newSession, btnId) {
+      if(isAdminMode) return; // Admin kazara tıklarsa diye güvenlik
+      
       const clickedBtn = document.getElementById(btnId);
       const allButtons = document.querySelectorAll('.action-btn, .cancel-btn'); 
       
       allButtons.forEach(b => b.disabled = true);
       clickedBtn.textContent = "İşleniyor...";
       
-      // Gelmeyeceğim butonuna basıldıysa uyarı rengi ver, normal seansa tıklandıysa sarı yap
       if(newSession === "Gelmeyecek") {
         clickedBtn.style.background = "var(--danger-color)";
       } else {
@@ -245,7 +271,7 @@
         .then(data => {
           if(data.success) {
             currentUser.currentSession = data.userSession;
-            updateHeaderStatus();
+            if(!isAdminMode) updateHeaderStatus();
             renderGrid(data.counts, data.maxCapacity);
           }
         });
