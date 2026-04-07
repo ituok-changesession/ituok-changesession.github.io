@@ -39,7 +39,7 @@
     .day-column { display: flex; flex-direction: column; gap: 15px; }
     .day-title { text-align: center; font-weight: bold; font-size: 18px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color); margin-bottom: 10px; }
     
-    .session-card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); text-align: center; display: flex; flex-direction: column; justify-content: space-between; transition: 0.3s; }
+    .session-card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); text-align: center; display: flex; flex-direction: column; justify-content: space-between; transition: 0.3s; position: relative; }
     .session-time { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
     .session-stats { font-size: 14px; margin-bottom: 15px; }
     
@@ -48,6 +48,13 @@
     .btn-full { background: var(--disabled-color); color: white; cursor: not-allowed; }
     .btn-available { background: var(--success-color); color: white; }
     .btn-available:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+
+    /* YENİ EKLENEN AÇILIR MENÜ (DROPDOWN) TASARIMI */
+    .dropdown-content { display: none; background: var(--card-bg); border: 2px solid var(--primary-color); border-radius: 6px; padding: 10px; max-height: 150px; overflow-y: auto; text-align: left; font-size: 13px; color: var(--text-color); margin-top: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .dropdown-content.show { display: block; animation: fadeIn 0.2s ease-in-out; }
+    .name-item { padding: 5px 0; border-bottom: 1px solid var(--disabled-bg); font-weight: 500; text-transform: capitalize; }
+    .name-item:last-child { border-bottom: none; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
     .cancel-container { display: flex; justify-content: center; margin-top: 30px; margin-bottom: 20px; }
     .cancel-btn { background-color: var(--danger-color); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
@@ -116,10 +123,11 @@
 
   <script>
     // DİKKAT: YENİ ALDIĞIN URL'Yİ BURAYA YAPIŞTIR!
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLt76qcjSqSbc78ykZEWhn6FkXnHDOxdBEtXCIb1hNhlHQ2ipuRiu-5IkWJk7OUWPIBA/exec';
+    const SCRIPT_URL = 'BURAYA_KENDİ_URL_Nİ_YAPIŞTIR';
     
     let currentUser = { name: '', no: '', currentSession: '' };
-    let isAdminMode = false; // Admin modu kontrolü eklendi
+    let isAdminMode = false;
+    let sessionNamesMap = {}; // Admin giriş yaptığında isimlerin tutulacağı obje
     
     const days = ["Çarşamba", "Perşembe", "Cuma"];
     const times = ["16.00-17.00", "17.10-18.10", "18.20-19.20"];
@@ -140,8 +148,12 @@
         .then(res => res.json())
         .then(data => {
           if(data.success) {
-            isAdminMode = data.isAdmin || false; // Backend'den admin mi bilgisi geldi
+            isAdminMode = data.isAdmin || false; 
             
+            if (isAdminMode) {
+              sessionNamesMap = data.names || {}; // İsimleri kaydet
+            }
+
             currentUser.name = name; 
             currentUser.no = no; 
             currentUser.currentSession = data.userSession;
@@ -154,7 +166,7 @@
               document.getElementById('displaySession').textContent = "Tüm Seansların Özeti";
               document.getElementById('displaySession').style.color = "var(--primary-color)";
               document.getElementById('displaySession').style.textDecoration = "none";
-              document.getElementById('cancelContainer').style.display = 'none'; // İptal butonunu komple gizle
+              document.getElementById('cancelContainer').style.display = 'none'; 
             } else {
               document.getElementById('displayUser').textContent = name.toUpperCase();
               document.getElementById('cancelContainer').style.display = 'flex';
@@ -169,8 +181,16 @@
         }).catch(() => { err.textContent = "Bağlantı hatası! URL'yi kontrol et."; btn.textContent = "Giriş Yap"; btn.disabled = false; });
     }
 
+    // AÇILIR MENÜYÜ AÇIP KAPATAN FONKSİYON
+    function toggleDropdown(dropId) {
+      const dropEl = document.getElementById(dropId);
+      // Diğer menülerin kapanmasını istersen burayı aktif edebilirsin, şimdilik hepsi aynı anda açık kalabilir
+      // document.querySelectorAll('.dropdown-content').forEach(el => { if(el.id !== dropId) el.classList.remove('show'); });
+      dropEl.classList.toggle('show');
+    }
+
     function updateHeaderStatus() {
-      if(isAdminMode) return; // Adminse burası çalışmasın
+      if(isAdminMode) return; 
       
       const sessionDisplay = document.getElementById('displaySession');
       const cancelBtn = document.getElementById('btn-cancel-session');
@@ -210,10 +230,18 @@
           let btnHtml = '';
           
           if(isAdminMode) {
-            // ADMİN İÇİN BUTON TASARIMI
-            btnHtml = `<button class="action-btn" style="background: var(--primary-color); color: white; cursor: default;" disabled>İzleme Modu</button>`;
+            // ADMİN İÇİN AÇILIR MENÜLÜ BUTON
+            const namesArray = sessionNamesMap[sessionName] || [];
+            let namesHtml = namesArray.length > 0 
+                ? namesArray.map(n => `<div class="name-item">• ${n}</div>`).join('') 
+                : `<div class="name-item">Kayıtlı kimse yok.</div>`;
+
+            btnHtml = `
+              <button class="action-btn" style="background: var(--primary-color); color: white;" onclick="toggleDropdown('drop-${safeId}')">👥 Kişileri Gör 🔽</button>
+              <div id="drop-${safeId}" class="dropdown-content">${namesHtml}</div>
+            `;
           } else {
-            // NORMAL KULLANICI İÇİN BUTON TASARIMI
+            // NORMAL KULLANICI
             if (isCurrentSession) {
               btnHtml = `<button class="action-btn btn-current" disabled>Seanstasın</button>`;
             } else if (isFull) {
@@ -237,7 +265,7 @@
     }
 
     function changeSession(newSession, btnId) {
-      if(isAdminMode) return; // Admin kazara tıklarsa diye güvenlik
+      if(isAdminMode) return; 
       
       const clickedBtn = document.getElementById(btnId);
       const allButtons = document.querySelectorAll('.action-btn, .cancel-btn'); 
