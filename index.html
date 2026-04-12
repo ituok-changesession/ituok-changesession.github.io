@@ -49,7 +49,6 @@
     .btn-available { background: var(--success-color); color: white; }
     .btn-available:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
 
-    /* YENİ EKLENEN AÇILIR MENÜ (DROPDOWN) TASARIMI */
     .dropdown-content { display: none; background: var(--card-bg); border: 2px solid var(--primary-color); border-radius: 6px; padding: 10px; max-height: 150px; overflow-y: auto; text-align: left; font-size: 13px; color: var(--text-color); margin-top: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
     .dropdown-content.show { display: block; animation: fadeIn 0.2s ease-in-out; }
     .name-item { padding: 5px 0; border-bottom: 1px solid var(--disabled-bg); font-weight: 500; text-transform: capitalize; }
@@ -74,6 +73,14 @@
     .dot-mc { background-image: url('cimen.png'); background-color: #7cbd6b; border-radius: 8px; }
     .dot-hw { background-image: url('kabak.png'); background-color: #ff6600; }
     .dot-md { background-image: url('kalkan.png'); background-color: #8b0000; }
+
+    /* YOKLAMA PANELİ TASARIMI */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; }
+    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 15px; }
+    .modal-content h3 { margin: 0; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+    .modal-content select, .modal-content input { padding: 10px; border: 1px solid var(--disabled-color); border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
+    #multipleNameDiv { display: none; background: #fff3cd; color: #856404; padding: 10px; border-radius: 6px; border: 1px solid #ffeeba; font-size: 13px; }
+    #attMessage { font-size: 14px; font-weight: bold; text-align: center; color: var(--danger-color); }
 
     @media (max-width: 768px) {
       .grid-container { gap: 5px; } .day-column { gap: 8px; } .session-card { padding: 8px; }
@@ -112,6 +119,43 @@
     </div>
   </div>
 
+  <div id="attendanceModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Yoklama Al</h3>
+      
+      <div>
+        <label style="font-size: 13px; font-weight: bold;">Hafta (Sütun Seçimi):</label>
+        <select id="attColumn">
+          <option value="C">C Sütunu (1. Hafta)</option>
+          <option value="D">D Sütunu (2. Hafta)</option>
+          <option value="E">E Sütunu (3. Hafta)</option>
+          <option value="F">F Sütunu (4. Hafta)</option>
+          <option value="G">G Sütunu (5. Hafta)</option>
+          <option value="H">H Sütunu (6. Hafta)</option>
+          <option value="I">I Sütunu (7. Hafta)</option>
+          <option value="J">J Sütunu (8. Hafta)</option>
+          <option value="K">K Sütunu (9. Hafta)</option>
+          <option value="L">L Sütunu (10. Hafta)</option>
+        </select>
+      </div>
+      
+      <div>
+        <label style="font-size: 13px; font-weight: bold;">Sporcu Soyismi:</label>
+        <input type="text" id="attSurname" placeholder="Örn: Yılmaz">
+      </div>
+      
+      <div id="multipleNameDiv">
+        <b>Birden fazla kişi bulundu!</b><br>Lütfen doğru kişiyi seçin:
+        <select id="attFullNameSelect" style="margin-top: 5px;"></select>
+      </div>
+      
+      <div id="attMessage"></div>
+      
+      <button class="btn" style="margin-top: 5px;" onclick="submitAttendance()" id="btnSubmitAtt">Yoklamaya Ekle</button>
+      <button class="btn" style="background: var(--disabled-color); margin-top: 0;" onclick="closeAttendanceModal()">Kapat</button>
+    </div>
+  </div>
+
   <div class="theme-bar">
     <div class="theme-dot dot-default" onclick="setTheme('default')" title="Klasik"></div>
     <div class="theme-dot dot-dark" onclick="setTheme('dark')" title="Gece"></div>
@@ -127,7 +171,7 @@
     
     let currentUser = { name: '', no: '', currentSession: '' };
     let isAdminMode = false;
-    let sessionNamesMap = {}; // Admin giriş yaptığında isimlerin tutulacağı obje
+    let sessionNamesMap = {};
     
     const days = ["Çarşamba", "Perşembe", "Cuma"];
     const times = ["16.00-17.00", "17.10-18.10", "18.20-19.20"];
@@ -151,7 +195,7 @@
             isAdminMode = data.isAdmin || false; 
             
             if (isAdminMode) {
-              sessionNamesMap = data.names || {}; // İsimleri kaydet
+              sessionNamesMap = data.names || {}; 
             }
 
             currentUser.name = name; 
@@ -166,10 +210,23 @@
               document.getElementById('displaySession').textContent = "Tüm Seansların Özeti";
               document.getElementById('displaySession').style.color = "var(--primary-color)";
               document.getElementById('displaySession').style.textDecoration = "none";
-              document.getElementById('cancelContainer').style.display = 'none'; 
+              
+              // ADMİN YOKLAMA BUTONU AYARI
+              document.getElementById('cancelContainer').style.display = 'flex';
+              const adminBtn = document.getElementById('btn-cancel-session');
+              adminBtn.textContent = "📋 Yoklama Başlat";
+              adminBtn.style.backgroundColor = "var(--primary-color)";
+              adminBtn.disabled = false;
+              adminBtn.onclick = openAttendanceModal;
+
             } else {
               document.getElementById('displayUser').textContent = name.toUpperCase();
               document.getElementById('cancelContainer').style.display = 'flex';
+              
+              // KULLANICI İPTAL BUTONU AYARI (Eski haline döndürüyoruz)
+              const userBtn = document.getElementById('btn-cancel-session');
+              userBtn.onclick = () => changeSession('Gelmeyecek', 'btn-cancel-session');
+              
               updateHeaderStatus();
             }
             
@@ -181,11 +238,8 @@
         }).catch(() => { err.textContent = "Bağlantı hatası! URL'yi kontrol et."; btn.textContent = "Giriş Yap"; btn.disabled = false; });
     }
 
-    // AÇILIR MENÜYÜ AÇIP KAPATAN FONKSİYON
     function toggleDropdown(dropId) {
       const dropEl = document.getElementById(dropId);
-      // Diğer menülerin kapanmasını istersen burayı aktif edebilirsin, şimdilik hepsi aynı anda açık kalabilir
-      // document.querySelectorAll('.dropdown-content').forEach(el => { if(el.id !== dropId) el.classList.remove('show'); });
       dropEl.classList.toggle('show');
     }
 
@@ -230,7 +284,6 @@
           let btnHtml = '';
           
           if(isAdminMode) {
-            // ADMİN İÇİN AÇILIR MENÜLÜ BUTON
             const namesArray = sessionNamesMap[sessionName] || [];
             let namesHtml = namesArray.length > 0 
                 ? namesArray.map(n => `<div class="name-item">• ${n}</div>`).join('') 
@@ -241,7 +294,6 @@
               <div id="drop-${safeId}" class="dropdown-content">${namesHtml}</div>
             `;
           } else {
-            // NORMAL KULLANICI
             if (isCurrentSession) {
               btnHtml = `<button class="action-btn btn-current" disabled>Seanstasın</button>`;
             } else if (isFull) {
@@ -317,6 +369,69 @@
     const savedTheme = localStorage.getItem('theme');
     if(savedTheme) setTheme(savedTheme);
 
+    // --- YOKLAMA FONKSİYONLARI ---
+    function openAttendanceModal() {
+      document.getElementById('attendanceModal').style.display = 'flex';
+      document.getElementById('attSurname').value = '';
+      document.getElementById('multipleNameDiv').style.display = 'none';
+      document.getElementById('attMessage').textContent = '';
+      document.getElementById('attMessage').style.color = 'var(--danger-color)';
+    }
+
+    function closeAttendanceModal() {
+      document.getElementById('attendanceModal').style.display = 'none';
+    }
+
+    function submitAttendance() {
+      const col = document.getElementById('attColumn').value;
+      const surname = document.getElementById('attSurname').value.trim();
+      const isMultiple = document.getElementById('multipleNameDiv').style.display !== 'none';
+      const fullSelect = document.getElementById('attFullNameSelect');
+      let fullname = '';
+      
+      if(isMultiple) {
+         fullname = fullSelect.value;
+      }
+      
+      if(!surname) {
+        document.getElementById('attMessage').textContent = "Lütfen soyisim girin.";
+        return;
+      }
+      
+      const btn = document.getElementById('btnSubmitAtt');
+      btn.textContent = "İşleniyor...";
+      btn.disabled = true;
+      document.getElementById('attMessage').textContent = "";
+      
+      const url = `${SCRIPT_URL}?action=markAttendance&column=${col}&surname=${encodeURIComponent(surname)}&fullname=${encodeURIComponent(fullname)}`;
+      
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          btn.textContent = "Yoklamaya Ekle";
+          btn.disabled = false;
+          
+          if(data.success) {
+            alert(data.message); 
+            closeAttendanceModal();
+          } else if (data.multiple) {
+            document.getElementById('multipleNameDiv').style.display = 'block';
+            fullSelect.innerHTML = '';
+            data.names.forEach(n => {
+               let opt = document.createElement('option');
+               opt.value = n; opt.textContent = n;
+               fullSelect.appendChild(opt);
+            });
+            document.getElementById('attMessage').textContent = "Lütfen listeden doğru kişiyi seçip tekrar butona basın.";
+          } else {
+            document.getElementById('attMessage').textContent = data.message;
+          }
+        }).catch(() => {
+          btn.textContent = "Yoklamaya Ekle";
+          btn.disabled = false;
+          document.getElementById('attMessage').textContent = "Bağlantı hatası oluştu.";
+        });
+    }
   </script>
 </body>
 </html>
