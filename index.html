@@ -60,8 +60,22 @@
     .cancel-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.3); }
     .cancel-btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.8; }
 
-    .decor-left, .decor-right { position: fixed; bottom: 60px; width: 250px; height: 250px; background-size: contain; background-repeat: no-repeat; background-position: bottom center; pointer-events: none; z-index: -1; display: none; }
-    .decor-left { left: 2%; } .decor-right { right: 2%; }
+    /* YOKLAMA PANELİ TASARIMI */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; }
+    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 15px; }
+    .modal-content h3 { margin: 0; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+    .modal-content select, .modal-content input { padding: 10px; border: 1px solid var(--disabled-color); border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
+    #multipleNameDiv { display: none; background: #fff3cd; color: #856404; padding: 10px; border-radius: 6px; border: 1px solid #ffeeba; font-size: 13px; }
+    #attMessage { font-size: 14px; font-weight: bold; text-align: center; color: var(--danger-color); }
+
+    /* YENİ: TOAST BİLDİRİMLERİ */
+    #toast-container { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+    .toast { background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; animation: slideUpToast 0.3s forwards, fadeOutToast 0.3s 2.5s forwards; text-align: center; }
+    .toast.success { background-color: var(--success-color); }
+    .toast.error { background-color: var(--danger-color); }
+    .toast.info { background-color: var(--primary-color); }
+    @keyframes slideUpToast { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeOutToast { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
 
     .theme-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 10px 0; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); z-index: 100; }
     .theme-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.2); transition: transform 0.2s; background-size: cover; background-position: center; }
@@ -73,14 +87,6 @@
     .dot-mc { background-image: url('cimen.png'); background-color: #7cbd6b; border-radius: 8px; }
     .dot-hw { background-image: url('kabak.png'); background-color: #ff6600; }
     .dot-md { background-image: url('kalkan.png'); background-color: #8b0000; }
-
-    /* YOKLAMA PANELİ TASARIMI */
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; }
-    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 15px; }
-    .modal-content h3 { margin: 0; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
-    .modal-content select, .modal-content input { padding: 10px; border: 1px solid var(--disabled-color); border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
-    #multipleNameDiv { display: none; background: #fff3cd; color: #856404; padding: 10px; border-radius: 6px; border: 1px solid #ffeeba; font-size: 13px; }
-    #attMessage { font-size: 14px; font-weight: bold; text-align: center; color: var(--danger-color); }
 
     @media (max-width: 768px) {
       .grid-container { gap: 5px; } .day-column { gap: 8px; } .session-card { padding: 8px; }
@@ -96,6 +102,8 @@
   <div class="decor-left"></div>
   <div class="decor-right"></div>
 
+  <div id="toast-container"></div>
+
   <div id="loginPanel">
     <h2>Sisteme Giriş</h2>
     <input type="text" id="studentName" placeholder="İsim Soyisim" required>
@@ -108,6 +116,18 @@
     <div class="header-info">
       Kullanıcı: <span id="displayUser" style="color: var(--primary-color);"></span><br>
       Seansın: <span id="displaySession" style="text-decoration: underline; font-weight: 800;"></span>
+    </div>
+
+    <div id="bowConfigPanel" class="header-info" style="display: none; padding: 15px; margin-top: -10px;">
+      <div style="font-size: 14px; font-weight: normal; margin-bottom: 8px;">
+        Kullandığın Yay Ölçüsü: <strong id="displayBowSize" style="color: var(--primary-color); font-size: 16px;">Belirtilmedi</strong>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: center; align-items: center;">
+        <select id="bowLengthSelect" style="width: auto; padding: 8px; font-size: 14px;"></select>
+        <span style="font-weight: bold; color: var(--disabled-color);">/</span>
+        <select id="bowPoundageSelect" style="width: auto; padding: 8px; font-size: 14px;"></select>
+        <button class="action-btn btn-available" style="width: auto; padding: 8px 15px;" onclick="saveBowSize()" id="btnSaveBow">Kaydet</button>
+      </div>
     </div>
     
     <div class="grid-container" id="gridContainer"></div>
@@ -122,7 +142,6 @@
   <div id="attendanceModal" class="modal-overlay">
     <div class="modal-content">
       <h3>Yoklama Al</h3>
-      
       <div>
         <label style="font-size: 13px; font-weight: bold;">Hafta (Sütun Seçimi):</label>
         <select id="attColumn">
@@ -138,19 +157,15 @@
           <option value="L">L Sütunu (10. Hafta)</option>
         </select>
       </div>
-      
       <div>
         <label style="font-size: 13px; font-weight: bold;">Sporcu Soyismi:</label>
         <input type="text" id="attSurname" placeholder="Örn: Yılmaz">
       </div>
-      
       <div id="multipleNameDiv">
         <b>Birden fazla kişi bulundu!</b><br>Lütfen doğru kişiyi seçin:
         <select id="attFullNameSelect" style="margin-top: 5px;"></select>
       </div>
-      
       <div id="attMessage"></div>
-      
       <button class="btn" style="margin-top: 5px;" onclick="submitAttendance()" id="btnSubmitAtt">Yoklamaya Ekle</button>
       <button class="btn" style="background: var(--disabled-color); margin-top: 0;" onclick="closeAttendanceModal()">Kapat</button>
     </div>
@@ -166,16 +181,49 @@
   </div>
 
   <script>
-    // DİKKAT: YENİ ALDIĞIN URL'Yİ BURAYA YAPIŞTIR!
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLt76qcjSqSbc78ykZEWhn6FkXnHDOxdBEtXCIb1hNhlHQ2ipuRiu-5IkWJk7OUWPIBA/exec';
     
-    let currentUser = { name: '', no: '', currentSession: '' };
+    let currentUser = { name: '', no: '', currentSession: '', bowSize: '' };
     let isAdminMode = false;
     let sessionNamesMap = {};
     
     const days = ["Çarşamba", "Perşembe", "Cuma"];
     const times = ["16.00-17.00", "17.10-18.10", "18.20-19.20"];
     const dbTimes = ["16.00", "17.10", "18.20"];
+
+    // YAY ÖLÇÜSÜ KONFİGÜRASYONU (Buradan min/max değerleri değiştirebilirsin)
+    const bowConfig = {
+      lengthMin: 66, lengthMax: 70,
+      poundageMin: 22, poundageMax: 30
+    };
+
+    // YAY SEÇENEKLERİNİ OLUŞTUR
+    function generateBowOptions() {
+      const lenSelect = document.getElementById('bowLengthSelect');
+      const lbsSelect = document.getElementById('bowPoundageSelect');
+      
+      for(let i = bowConfig.lengthMin; i <= bowConfig.lengthMax; i += 2) {
+        lenSelect.innerHTML += `<option value="${i}">${i}</option>`;
+      }
+      for(let i = bowConfig.poundageMin; i <= bowConfig.poundageMax; i += 2) {
+        lbsSelect.innerHTML += `<option value="${i}">${i} lbs</option>`;
+      }
+    }
+    generateBowOptions(); // Sayfa yüklenince seçenekleri doldur
+
+    // TOAST BİLDİRİM FONKSİYONU
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      
+      // 2.8 saniye sonra DOM'dan sil
+      setTimeout(() => {
+        if(toast.parentElement) toast.parentElement.removeChild(toast);
+      }, 2800);
+    }
 
     function login() {
       const name = document.getElementById('studentName').value;
@@ -193,14 +241,12 @@
         .then(data => {
           if(data.success) {
             isAdminMode = data.isAdmin || false; 
-            
-            if (isAdminMode) {
-              sessionNamesMap = data.names || {}; 
-            }
+            if (isAdminMode) sessionNamesMap = data.names || {}; 
 
             currentUser.name = name; 
             currentUser.no = no; 
             currentUser.currentSession = data.userSession;
+            currentUser.bowSize = data.userBowSize; // Yay ölçüsünü kaydet
             
             document.getElementById('loginPanel').style.display = 'none';
             document.getElementById('dashboardPanel').style.display = 'block';
@@ -210,24 +256,29 @@
               document.getElementById('displaySession').textContent = "Tüm Seansların Özeti";
               document.getElementById('displaySession').style.color = "var(--primary-color)";
               document.getElementById('displaySession').style.textDecoration = "none";
+              document.getElementById('bowConfigPanel').style.display = 'none'; // Admin yay seçmesin
               
-              // ADMİN YOKLAMA BUTONU AYARI
               document.getElementById('cancelContainer').style.display = 'flex';
               const adminBtn = document.getElementById('btn-cancel-session');
               adminBtn.textContent = "📋 Yoklama Başlat";
               adminBtn.style.backgroundColor = "var(--primary-color)";
               adminBtn.disabled = false;
               adminBtn.onclick = openAttendanceModal;
-
+              
+              showToast("Yönetici girişi başarılı.", "info");
             } else {
               document.getElementById('displayUser').textContent = name.toUpperCase();
               document.getElementById('cancelContainer').style.display = 'flex';
+              document.getElementById('bowConfigPanel').style.display = 'block'; // Sporcu yay seçebilsin
               
-              // KULLANICI İPTAL BUTONU AYARI (Eski haline döndürüyoruz)
+              // Ekranda mevcut yay ölçüsünü göster
+              document.getElementById('displayBowSize').textContent = currentUser.bowSize ? currentUser.bowSize : "Belirtilmedi";
+              
               const userBtn = document.getElementById('btn-cancel-session');
               userBtn.onclick = () => changeSession('Gelmeyecek', 'btn-cancel-session');
               
               updateHeaderStatus();
+              showToast("Giriş başarılı!", "success");
             }
             
             renderGrid(data.counts, data.maxCapacity);
@@ -236,6 +287,35 @@
             btn.textContent = "Giriş Yap"; btn.disabled = false;
           }
         }).catch(() => { err.textContent = "Bağlantı hatası! URL'yi kontrol et."; btn.textContent = "Giriş Yap"; btn.disabled = false; });
+    }
+
+    // YAY ÖLÇÜSÜ KAYDETME FONKSİYONU
+    function saveBowSize() {
+      const len = document.getElementById('bowLengthSelect').value;
+      const lbs = document.getElementById('bowPoundageSelect').value;
+      const bowSizeStr = `${len}/${lbs}`;
+      
+      const btn = document.getElementById('btnSaveBow');
+      btn.textContent = "Kyd...";
+      btn.disabled = true;
+
+      fetch(`${SCRIPT_URL}?action=updateBowSize&name=${encodeURIComponent(currentUser.name)}&no=${encodeURIComponent(currentUser.no)}&bowSize=${encodeURIComponent(bowSizeStr)}`)
+        .then(res => res.json())
+        .then(data => {
+          btn.textContent = "Kaydet";
+          btn.disabled = false;
+          if(data.success) {
+            document.getElementById('displayBowSize').textContent = bowSizeStr;
+            currentUser.bowSize = bowSizeStr;
+            showToast("Yay ölçün başarıyla kaydedildi!", "success");
+          } else {
+            showToast("Kaydedilemedi: " + data.message, "error");
+          }
+        }).catch(() => {
+          btn.textContent = "Kaydet";
+          btn.disabled = false;
+          showToast("Bağlantı hatası!", "error");
+        });
     }
 
     function toggleDropdown(dropId) {
@@ -336,13 +416,15 @@
         .then(res => res.json())
         .then(data => {
           if(data.success) {
+            showToast("Seans değişikliği başarılı!", "success");
             refreshData();
           } else {
             clickedBtn.textContent = "Hata!";
             clickedBtn.style.background = "var(--danger-color)";
+            showToast(data.message, "error");
             setTimeout(() => refreshData(), 1500);
           }
-        }).catch(() => refreshData());
+        }).catch(() => { showToast("Bağlantı hatası!", "error"); refreshData(); });
     }
 
     function refreshData() {
@@ -369,7 +451,6 @@
     const savedTheme = localStorage.getItem('theme');
     if(savedTheme) setTheme(savedTheme);
 
-    // --- YOKLAMA FONKSİYONLARI ---
     function openAttendanceModal() {
       document.getElementById('attendanceModal').style.display = 'flex';
       document.getElementById('attSurname').value = '';
@@ -389,9 +470,7 @@
       const fullSelect = document.getElementById('attFullNameSelect');
       let fullname = '';
       
-      if(isMultiple) {
-         fullname = fullSelect.value;
-      }
+      if(isMultiple) fullname = fullSelect.value;
       
       if(!surname) {
         document.getElementById('attMessage').textContent = "Lütfen soyisim girin.";
@@ -412,7 +491,8 @@
           btn.disabled = false;
           
           if(data.success) {
-            alert(data.message); 
+            // YENİ: Başarılı olunca Toast göster ve kapat
+            showToast(data.message, "success"); 
             closeAttendanceModal();
           } else if (data.multiple) {
             document.getElementById('multipleNameDiv').style.display = 'block';
