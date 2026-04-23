@@ -185,11 +185,12 @@
   </div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDPnmYuyf-9rJQHFBe6dlzv8XvquB0WsZAuCV3sNIqTR1tvEYZ_8dCwvWvKOtRsGjtGQ/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwvaGZDvuo2xZ9VocXfP5S7qxVFWWpChmgF8efojF7sLgCUjGFG3tCTGqeAZVEfTVv/exec';
     
     let currentUser = { name: '', no: '', currentSession: '', bowSize: '' };
     let isAdminMode = false;
     let sessionNamesMap = {};
+    let globalAttendanceList = []; // YENİ EKLENDİ
     
     const days = ["Çarşamba", "Perşembe", "Cuma"];
     const times = ["16.00-17.00", "17.10-18.10", "18.20-19.20"];
@@ -244,8 +245,12 @@
         .then(res => res.json())
         .then(data => {
           if(data.success) {
+            
             isAdminMode = data.isAdmin || false; 
-            if (isAdminMode) sessionNamesMap = data.names || {}; 
+            if (isAdminMode) {
+              sessionNamesMap = data.names || {}; 
+              globalAttendanceList = data.attendanceList || []; // YENİ EKLENDİ
+            }
 
             currentUser.name = name; 
             currentUser.no = no; 
@@ -469,52 +474,60 @@
 
     function submitAttendance() {
       const col = document.getElementById('attColumn').value;
-      const surname = document.getElementById('attSurname').value.trim();
+      const surnameInput = document.getElementById('attSurname').value.trim().toLocaleLowerCase('tr-TR');
       const isMultiple = document.getElementById('multipleNameDiv').style.display !== 'none';
       const fullSelect = document.getElementById('attFullNameSelect');
-      let fullname = '';
       
-      if(isMultiple) fullname = fullSelect.value;
-      
-      if(!surname) {
+      if(!surnameInput) {
         document.getElementById('attMessage').textContent = "Lütfen soyisim girin.";
         return;
       }
       
-      const btn = document.getElementById('btnSubmitAtt');
-      btn.textContent = "İşleniyor...";
-      btn.disabled = true;
-      document.getElementById('attMessage').textContent = "";
-      
-      const url = `${SCRIPT_URL}?action=markAttendance&column=${col}&surname=${encodeURIComponent(surname)}&fullname=${encodeURIComponent(fullname)}`;
-      
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          btn.textContent = "Yoklamaya Ekle";
-          btn.disabled = false;
-          
-          if(data.success) {
-            // YENİ: Başarılı olunca Toast göster ve kapat
-            showToast(data.message, "success"); 
-            closeAttendanceModal();
-          } else if (data.multiple) {
-            document.getElementById('multipleNameDiv').style.display = 'block';
-            fullSelect.innerHTML = '';
-            data.names.forEach(n => {
-               let opt = document.createElement('option');
-               opt.value = n; opt.textContent = n;
-               fullSelect.appendChild(opt);
-            });
-            document.getElementById('attMessage').textContent = "Lütfen listeden doğru kişiyi seçip tekrar butona basın.";
-          } else {
-            document.getElementById('attMessage').textContent = data.message;
+      let finalFullName = "";
+
+      // Eğer çakışma menüsü açıksa direkt seçileni al
+      if(isMultiple) {
+        finalFullName = fullSelect.value;
+      } else {
+        // GOOGLE'A SORMADAN, CİHAZ İÇİNDE ANINDA ARAMA YAPIYORUZ
+        let matchedNames = [];
+        globalAttendanceList.forEach(fullName => {
+          const parts = fullName.split(" ");
+          if(parts.length > 0) {
+            const cellSurname = parts[parts.length - 1].toLocaleLowerCase('tr-TR');
+            if(cellSurname === surnameInput) {
+              matchedNames.push(fullName);
+            }
           }
-        }).catch(() => {
-          btn.textContent = "Yoklamaya Ekle";
-          btn.disabled = false;
-          document.getElementById('attMessage').textContent = "Bağlantı hatası oluştu.";
         });
+
+        // Çakışma Kontrolleri
+        if(matchedNames.length === 0) {
+          document.getElementById('attMessage').textContent = "Bu soyisimde biri bulunamadı!";
+          return;
+        } else if (matchedNames.length > 1) {
+          document.getElementById('multipleNameDiv').style.display = 'block';
+          fullSelect.innerHTML = '';
+          matchedNames.forEach(n => {
+             let opt = document.createElement('option');
+             opt.value = n; opt.textContent = n;
+             fullSelect.appendChild(opt);
+          });
+          document.getElementById('attMessage').textContent = "Lütfen listeden doğru kişiyi seçip tekrar butona basın.";
+          return;
+        } else {
+          finalFullName = matchedNames[0]; // Tam 1 kişi bulundu
+        }
+      }
+
+      // İYİMSER ARAYÜZ (OPTIMISTIC UI): Google'ı beklemeden ekranı anında kapat ve başarılı say!
+      showToast(`${finalFullName} yoklamaya eklendi!`, "success");
+      closeAttendanceModal();
+      
+      // Arka planda Google'a "Git bunu Excel'de yeşil yap" diyoruz. 
+      // İşlemin 5 saniye sürmesi artık umurumuzda değil, çünkü ekranımızda iş bitti.
+      const url = `${SCRIPT_URL}?action=markAttendance&column=${col}&surname=${encodeURIComponent(surnameInput)}&fullname=${encodeURIComponent(finalFullName)}`;
+      fetch(url).catch(err => console.log("Arka plan senkronizasyon hatası:", err));
     }
   </script>
 </body>
