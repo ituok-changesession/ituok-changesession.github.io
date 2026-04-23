@@ -413,46 +413,57 @@
     function changeSession(newSession, btnId) {
       if(isAdminMode) return; 
       
+      const clickedBtn = document.getElementById(btnId);
       const allButtons = document.querySelectorAll('.action-btn, .cancel-btn'); 
+      
+      // 1. KORUMA: Kullanıcı tıkladığı an TÜM BUTONLARI kilitle ve "İşleniyor" yaz.
       allButtons.forEach(b => b.disabled = true);
-      
-      const oldSession = currentUser.currentSession;
-      
-      // 1. İYİMSER GÜNCELLEME (Google'ı beklemeden ekranı anında değiştiriyoruz)
-      if (oldSession && oldSession !== "Gelmeyecek" && globalCounts[oldSession] > 0) {
-         globalCounts[oldSession]--; // Eski seansın sayısını 1 azalt
+      if(clickedBtn) {
+        clickedBtn.textContent = "İşleniyor...";
+        clickedBtn.style.background = "#ffc107";
+        clickedBtn.style.color = "#000";
       }
-      if (newSession !== "Gelmeyecek") {
-         globalCounts[newSession]++; // Yeni seansın sayısını 1 artır
-      }
-      
-      currentUser.currentSession = newSession;
-      
-      // Arayüzü beklemeden ANINDA yenile
-      updateHeaderStatus();
-      renderGrid(globalCounts, globalMaxCapacity);
-      showToast("İşleniyor...", "info");
 
-      // 2. ARKA PLAN SENKRONİZASYONU (Google'a sessizce haber ver)
+      const oldSession = currentUser.currentSession;
+      let hasError = false; // Arkada işler ters giderse diye bir dedektör
+
+      // 2. ARKA PLAN: Google'a "Seansı değiştir" emrini hemen yolluyoruz (Vakit kaybetmeden başlasın)
       fetch(`${SCRIPT_URL}?action=update&name=${encodeURIComponent(currentUser.name)}&no=${encodeURIComponent(currentUser.no)}&session=${encodeURIComponent(newSession)}`)
         .then(res => res.json())
         .then(data => {
-          if(data.success) {
-            showToast("Seans değişikliği başarıyla kaydedildi!", "success");
-            // Her şey yolunda, ekran zaten güncel olduğu için dokunmuyoruz.
-          } else {
-            // Eğer seans saniyesinde dolmuşsa veya hata varsa, ekranı geri eski haline al!
+          if(!data.success) {
+            hasError = true;
             showToast("Hata: " + data.message, "error");
-            currentUser.currentSession = oldSession;
-            if (oldSession && oldSession !== "Gelmeyecek") globalCounts[oldSession]++;
-            if (newSession !== "Gelmeyecek") globalCounts[newSession]--;
-            updateHeaderStatus();
-            renderGrid(globalCounts, globalMaxCapacity);
+            refreshData(); // Kontenjan falan dolduysa sistemi baştan yenile
           }
         }).catch(() => { 
+            hasError = true;
             showToast("Bağlantı hatası, değişiklik kaydedilemedi!", "error"); 
-            refreshData(); // Bağlantı koparsa işi sağlama alıp baştan çek
+            refreshData(); 
         });
+
+      // 3. YALANCI BEKLEME (1.5 Saniye): İyimser arayüzü 1.5 saniye gecikmeli devreye sokuyoruz
+      setTimeout(() => {
+        // Eğer bu 1.5 saniye içinde arkadan bir hata kodu geldiyse işlemi durdur!
+        if (hasError) return;
+
+        // Her şey yolundaysa İyimser Arayüzü uygula
+        if (oldSession && oldSession !== "Gelmeyecek" && globalCounts[oldSession] > 0) {
+           globalCounts[oldSession]--;
+        }
+        if (newSession !== "Gelmeyecek") {
+           globalCounts[newSession]++;
+        }
+        
+        currentUser.currentSession = newSession;
+        
+        // Ekranı yenile. (Bu işlem butonların kilidini otomatik olarak açacaktır)
+        updateHeaderStatus();
+        renderGrid(globalCounts, globalMaxCapacity);
+        
+        showToast("Seans değişikliği başarılı!", "success");
+        
+      }, 1500); // 1500 milisaniye = 1.5 saniye kilit süresi
     }
 
     function refreshData() {
