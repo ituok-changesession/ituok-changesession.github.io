@@ -185,12 +185,14 @@
   </div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwvaGZDvuo2xZ9VocXfP5S7qxVFWWpChmgF8efojF7sLgCUjGFG3tCTGqeAZVEfTVv/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBoDicmPLtG2tlDxfeW6ue42R8Bx8ucp7DnPIsgwFg0MBrjOfNztYfWG0YdD-ENcmLSg/exec';
     
     let currentUser = { name: '', no: '', currentSession: '', bowSize: '' };
     let isAdminMode = false;
     let sessionNamesMap = {};
-    let globalAttendanceList = []; // YENİ EKLENDİ
+    let globalAttendanceList = []; 
+    let globalCounts = {}; // YENİ: Anlık doluluk sayılarını tutacak
+    let globalMaxCapacity = 18; // YENİ: Kapasiteyi tutacak
     
     const days = ["Çarşamba", "Perşembe", "Cuma"];
     const times = ["16.00-17.00", "17.10-18.10", "18.20-19.20"];
@@ -255,7 +257,10 @@
             currentUser.name = name; 
             currentUser.no = no; 
             currentUser.currentSession = data.userSession;
-            currentUser.bowSize = data.userBowSize; // Yay ölçüsünü kaydet
+            currentUser.bowSize = data.userBowSize; 
+            
+            globalCounts = data.counts; // YENİ EKLENDİ
+            globalMaxCapacity = data.maxCapacity; // YENİ EKLENDİ
             
             document.getElementById('loginPanel').style.display = 'none';
             document.getElementById('dashboardPanel').style.display = 'block';
@@ -408,32 +413,46 @@
     function changeSession(newSession, btnId) {
       if(isAdminMode) return; 
       
-      const clickedBtn = document.getElementById(btnId);
       const allButtons = document.querySelectorAll('.action-btn, .cancel-btn'); 
-      
       allButtons.forEach(b => b.disabled = true);
-      clickedBtn.textContent = "İşleniyor...";
       
-      if(newSession === "Gelmeyecek") {
-        clickedBtn.style.background = "var(--danger-color)";
-      } else {
-        clickedBtn.style.background = "#ffc107";
-        clickedBtn.style.color = "#000";
+      const oldSession = currentUser.currentSession;
+      
+      // 1. İYİMSER GÜNCELLEME (Google'ı beklemeden ekranı anında değiştiriyoruz)
+      if (oldSession && oldSession !== "Gelmeyecek" && globalCounts[oldSession] > 0) {
+         globalCounts[oldSession]--; // Eski seansın sayısını 1 azalt
       }
+      if (newSession !== "Gelmeyecek") {
+         globalCounts[newSession]++; // Yeni seansın sayısını 1 artır
+      }
+      
+      currentUser.currentSession = newSession;
+      
+      // Arayüzü beklemeden ANINDA yenile
+      updateHeaderStatus();
+      renderGrid(globalCounts, globalMaxCapacity);
+      showToast("İşleniyor...", "info");
 
+      // 2. ARKA PLAN SENKRONİZASYONU (Google'a sessizce haber ver)
       fetch(`${SCRIPT_URL}?action=update&name=${encodeURIComponent(currentUser.name)}&no=${encodeURIComponent(currentUser.no)}&session=${encodeURIComponent(newSession)}`)
         .then(res => res.json())
         .then(data => {
           if(data.success) {
-            showToast("Seans değişikliği başarılı!", "success");
-            refreshData();
+            showToast("Seans değişikliği başarıyla kaydedildi!", "success");
+            // Her şey yolunda, ekran zaten güncel olduğu için dokunmuyoruz.
           } else {
-            clickedBtn.textContent = "Hata!";
-            clickedBtn.style.background = "var(--danger-color)";
-            showToast(data.message, "error");
-            setTimeout(() => refreshData(), 1500);
+            // Eğer seans saniyesinde dolmuşsa veya hata varsa, ekranı geri eski haline al!
+            showToast("Hata: " + data.message, "error");
+            currentUser.currentSession = oldSession;
+            if (oldSession && oldSession !== "Gelmeyecek") globalCounts[oldSession]++;
+            if (newSession !== "Gelmeyecek") globalCounts[newSession]--;
+            updateHeaderStatus();
+            renderGrid(globalCounts, globalMaxCapacity);
           }
-        }).catch(() => { showToast("Bağlantı hatası!", "error"); refreshData(); });
+        }).catch(() => { 
+            showToast("Bağlantı hatası, değişiklik kaydedilemedi!", "error"); 
+            refreshData(); // Bağlantı koparsa işi sağlama alıp baştan çek
+        });
     }
 
     function refreshData() {
@@ -442,8 +461,10 @@
         .then(data => {
           if(data.success) {
             currentUser.currentSession = data.userSession;
+            globalCounts = data.counts; // YENİ
+            globalMaxCapacity = data.maxCapacity; // YENİ
             if(!isAdminMode) updateHeaderStatus();
-            renderGrid(data.counts, data.maxCapacity);
+            renderGrid(globalCounts, globalMaxCapacity);
           }
         });
     }
