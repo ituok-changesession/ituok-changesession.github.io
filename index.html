@@ -72,7 +72,7 @@
   <div id="loginPanel" class="panel">
     <h2>Sisteme Giriş</h2>
     <input type="text" id="loginName" placeholder="İsim Soyisim" required>
-    <input type="text" id="loginNo" placeholder="Öğrenci No / Şifre" required>
+    <input type="text" id="loginNo" placeholder="Öğrenci No" required>
     <button class="btn" id="loginBtn" onclick="appLogin()">Giriş Yap</button>
   </div>
 
@@ -147,9 +147,10 @@
   </div>
 
   <script>
+    // DİKKAT: BURADAKİ supabaseClient İSMİ HATA VERMEMESİ İÇİN DEĞİŞTİRİLDİ
     const SUPABASE_URL = 'https://ionmdyvssqqtutmqsunr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlvbm1keXZzc3FxdHV0bXFzdW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5OTAyODgsImV4cCI6MjEwNzU2NjI4OH0.8N1UNStHF9_vwK5X7WBP1pPEfwioB4EYCoY2NnIsmuI';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const config = {
       egitim: {
@@ -215,7 +216,7 @@
 
       btn.disabled = true; btn.innerText = "Bağlanıyor...";
       
-      const { data, error } = await supabase.from('users').select('*').eq('name_lower', name).eq('no', no).single();
+      const { data, error } = await supabaseClient.from('users').select('*').eq('name_lower', name).eq('no', no).single();
       
       if(error || !data) {
         showToast("Kayıt bulunamadı.", "error");
@@ -253,7 +254,7 @@
       const b = document.getElementById('uBowLbs').value;
       const val = (l && b) ? `${l}/${b}` : "";
       
-      const { error } = await supabase.from('users').update({ bow_size: val }).eq('id', currentUser.id);
+      const { error } = await supabaseClient.from('users').update({ bow_size: val }).eq('id', currentUser.id);
       if(error) showToast("Hata!", "error");
       else { currentUser.bow_size = val; showToast("Yay ölçüsü kaydedildi."); }
     }
@@ -263,7 +264,7 @@
       const list = g === 'Eğitim' ? config.egitim.sessions : config.antrenman.sessions;
       const cap = g === 'Eğitim' ? config.egitim.cap : config.antrenman.cap;
       
-      const { data: users } = await supabase.from('users').select('current_session');
+      const { data: users } = await supabaseClient.from('users').select('current_session');
       let counts = {};
       list.forEach(s => counts[s] = 0);
       users.forEach(u => { if(counts[u.current_session] !== undefined) counts[u.current_session]++; });
@@ -292,7 +293,7 @@
     }
 
     async function changeUserSession(newS) {
-      const { error } = await supabase.from('users').update({ current_session: newS }).eq('id', currentUser.id);
+      const { error } = await supabaseClient.from('users').update({ current_session: newS }).eq('id', currentUser.id);
       if(error) { showToast("Kapasite veya bağlantı hatası.", "error"); return; }
       currentUser.current_session = newS;
       document.getElementById('uSession').innerText = newS;
@@ -309,8 +310,8 @@
       const area = document.getElementById('adminContentArea');
       area.innerHTML = `<h3>Yoklama: ${w}. Hafta | ${s}</h3><div id="yoklamaList" style="display:flex; flex-direction:column; gap:10px;">Yükleniyor...</div>`;
       
-      const { data: users } = await supabase.from('users').select('id, name, bow_size').eq('current_session', s).order('name');
-      const { data: att } = await supabase.from('attendance').select('user_id').eq('week', w).eq('session_name', s);
+      const { data: users } = await supabaseClient.from('users').select('id, name, bow_size').eq('current_session', s).order('name');
+      const { data: att } = await supabaseClient.from('attendance').select('user_id').eq('week', w).eq('session_name', s);
       
       const attSet = new Set(att.map(a => a.user_id));
       const listEl = document.getElementById('yoklamaList');
@@ -334,7 +335,7 @@
 
     async function markHere(uid, w, s, btn) {
       btn.disabled = true; btn.innerText = "...";
-      const { error } = await supabase.from('attendance').insert([{ user_id: uid, week: w, session_name: s }]);
+      const { error } = await supabaseClient.from('attendance').insert([{ user_id: uid, week: w, session_name: s }]);
       if(error) { btn.disabled = false; btn.innerText = "Burada"; showToast("Hata!", "error"); }
       else { btn.className = "action-btn btn-full"; btn.innerText = "Eklendi"; showToast("Eklendi!"); }
     }
@@ -349,8 +350,8 @@
         <div id="tabloIcerik" style="overflow-x:auto;">Yükleniyor...</div>
       `;
 
-      const { data: users } = await supabase.from('users').select('id, name, bow_size').eq('user_group', type).order('name');
-      const { data: att } = await supabase.from('attendance').select('user_id, week');
+      const { data: users } = await supabaseClient.from('users').select('id, name, bow_size').eq('user_group', type).order('name');
+      const { data: att } = await supabaseClient.from('attendance').select('user_id, week');
       
       let html = `<table><tr><th>Yay</th><th>Oran</th><th>İsim Soyisim</th>`;
       for(let i=1; i<=10; i++) html += `<th>H${i}</th>`;
@@ -374,7 +375,7 @@
     }
 
     async function adminUpdateBow(uid, val) {
-      await supabase.from('users').update({ bow_size: val }).eq('id', uid);
+      await supabaseClient.from('users').update({ bow_size: val }).eq('id', uid);
       showToast("Yay güncellendi");
     }
 
@@ -385,7 +386,7 @@
       const list = type === 'Eğitim' ? config.egitim.sessions : config.antrenman.sessions;
       const cap = type === 'Eğitim' ? config.egitim.cap : config.antrenman.cap;
       
-      const { data: users } = await supabase.from('users').select('name, current_session, bow_size').eq('user_group', type);
+      const { data: users } = await supabaseClient.from('users').select('name, current_session, bow_size').eq('user_group', type);
       
       const grid = document.getElementById('adminGrid');
       grid.innerHTML = '';
@@ -422,7 +423,7 @@
         current_session: sess || null
       };
 
-      const { error } = await supabase.from('users').insert([obj]);
+      const { error } = await supabaseClient.from('users').insert([obj]);
       if(error) showToast("Hata oluştu.", "error");
       else { showToast("Üye eklendi!"); closeModal('modalYeniUye'); document.getElementById('nuName').value=''; document.getElementById('nuNo').value=''; }
     }
