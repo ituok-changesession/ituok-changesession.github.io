@@ -55,8 +55,8 @@
     .btn-full { background: var(--disabled-color); color: white; }
     .btn-available { background: var(--success-color); color: white; }
 
-    .admin-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-    .admin-btn { padding: 15px; font-size: 14px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    .admin-menu { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+    .admin-btn { padding: 15px 5px; font-size: 13px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; }
     .admin-btn:hover { transform: translateY(-2px); }
     .btn-grp1 { background: var(--primary-color); color: var(--btn-text); }
     .btn-grp2 { background: #e67e22; }
@@ -98,7 +98,9 @@
       .concept-theme { display: none !important; }
       .decor-left, .decor-right { display: none !important; }
       .panel { padding: 15px; }
-      .admin-menu { grid-template-columns: 1fr; gap: 10px; }
+      .admin-menu { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .admin-menu .btn-grp3 { grid-column: span 2; }
+      .admin-btn { min-height: 50px; font-size: 13px; padding: 10px; }
       .days-wrapper { grid-template-columns: 1fr; gap: 15px; }
       th, td { padding: 5px; font-size: 12px; }
       .att-box { width: 16px; height: 16px; }
