@@ -10,63 +10,103 @@
       --bg-color: #f0f2f5; --text-color: #333; --card-bg: #ffffff;
       --primary-color: #0b2559; --btn-text: #ffffff;
       --success-color: #28a745; --danger-color: #dc3545;
-      --disabled-color: #6c757d; --disabled-bg: #e9ecef;
+      --disabled-color: #6c757d; --disabled-bg: #e9ecef; --bg-image: none;
     }
 
-    [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --primary-color: #bb86fc; }
-    [data-theme="forest"] { --bg-color: #e8f5e9; --text-color: #1b5e20; --card-bg: #ffffff; --primary-color: #2e7d32; }
+    [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --primary-color: #bb86fc; --btn-text: #000; }
+    [data-theme="forest"] { --bg-color: #e8f5e9; --text-color: #1b5e20; --card-bg: #ffffff; --primary-color: #2e7d32; --btn-text: #fff; }
+    [data-theme="minecraft"] { --bg-color: #7cbd6b; --text-color: #ffffff; --card-bg: rgba(0, 0, 0, 0.6); --primary-color: #555555; }
+    [data-theme="minecraft"] .decor-left { display: block !important; background-image: url('./iskelet.png'); }
+    [data-theme="minecraft"] .decor-right { display: block !important; background-image: url('./ari.png'); }
+    [data-theme="halloween"] { --bg-color: #1a0b2e; --text-color: #f5f5f5; --card-bg: #ff6600; --primary-color: #000000; --success-color: #440066; }
+    [data-theme="halloween"] .decor-left { display: block !important; background-image: url('./hayalet.png'); }
+    [data-theme="halloween"] .decor-right { display: block !important; background-image: url('./yarasa.png'); }
+    [data-theme="medieval"] { --bg-color: #2c1e16; --text-color: #3b2818; --card-bg: #eaddc5; --primary-color: #8b0000; --success-color: #5c4033; }
+    [data-theme="medieval"] .decor-left { display: block !important; background-image: url('./sovalye.png'); }
+    [data-theme="medieval"] .decor-right { display: block !important; background-image: url('./ejderha.png'); }
 
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 15px; padding-bottom: 80px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); background-image: var(--bg-image); color: var(--text-color); margin: 0; padding: 15px; padding-bottom: 90px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; transition: all 0.3s ease; }
     
-    .panel { background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 100%; max-width: 1000px; margin-top: 20px; display: none; }
+    .decor-left, .decor-right { position: fixed; bottom: 60px; width: 250px; height: 250px; background-size: contain; background-repeat: no-repeat; background-position: bottom center; pointer-events: none; z-index: 0; display: none; }
+    .decor-left { left: 2%; } .decor-right { right: 2%; }
+
+    .panel { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 100%; max-width: 1000px; margin-top: 20px; display: none; box-sizing: border-box; position: relative; z-index: 10; }
     #loginPanel { max-width: 400px; margin-top: 50px; display: block; }
     
     h1, h2, h3 { text-align: center; margin-top: 0; }
-    input, select { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid var(--disabled-color); border-radius: 6px; box-sizing: border-box; font-size: 15px; background: var(--card-bg); color: var(--text-color); }
+    input, select { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid var(--disabled-color); border-radius: 6px; box-sizing: border-box; font-size: 15px; background: var(--card-bg); color: var(--text-color); }
     
-    .btn { width: 100%; padding: 12px; margin-top: 15px; background: var(--primary-color); color: var(--btn-text); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; }
+    .btn { width: 100%; padding: 14px; margin-top: 15px; background: var(--primary-color); color: var(--btn-text); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; }
     .btn:disabled { background: var(--disabled-color); cursor: not-allowed; }
     .btn-row { display: flex; gap: 10px; margin-top: 15px; }
     
-    .header-info { text-align: center; margin-bottom: 20px; font-size: 16px; font-weight: bold; background: var(--disabled-bg); padding: 15px; border-radius: 8px; }
+    .header-info { text-align: center; margin-bottom: 20px; font-size: 15px; font-weight: bold; background: var(--disabled-bg); padding: 15px; border-radius: 8px; }
     
-    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-top: 20px; }
     .session-card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--disabled-bg); }
-    .session-time { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: var(--primary-color); }
+    .session-time { font-size: 15px; font-weight: bold; margin-bottom: 10px; color: var(--primary-color); }
     .session-stats { font-size: 14px; margin-bottom: 10px; }
     
-    .action-btn { padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
+    .action-btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; font-size: 14px; }
     .btn-current { background: var(--danger-color); color: white; }
     .btn-full { background: var(--disabled-color); color: white; }
     .btn-available { background: var(--success-color); color: white; }
 
-    .admin-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px; }
-    .admin-menu button { padding: 15px; font-size: 14px; border-radius: 8px; border: none; background: var(--primary-color); color: white; font-weight: bold; cursor: pointer; }
+    .admin-menu { display: flex; flex-direction: column; gap: 25px; margin-bottom: 25px; }
+    .admin-menu-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .admin-btn { padding: 15px; font-size: 14px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    .admin-btn:hover { transform: translateY(-2px); }
+    .btn-grp1 { background: var(--primary-color); color: var(--btn-text); }
+    .btn-grp2 { background: #e67e22; }
+    .btn-grp3 { background: var(--success-color); }
     
-    #adminContentArea { margin-top: 20px; padding: 20px; border: 2px dashed var(--disabled-color); border-radius: 8px; overflow-x: auto; }
+    #adminContentArea { margin-top: 10px; padding: 15px; border: 2px dashed var(--disabled-color); border-radius: 8px; overflow-x: auto; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: center; }
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: center; min-width: 600px; }
     th, td { border: 1px solid var(--disabled-color); padding: 8px; }
-    th { background: var(--primary-color); color: white; }
-    .att-box { width: 25px; height: 25px; border-radius: 4px; display: inline-block; }
+    th { background: var(--primary-color); color: var(--btn-text); }
+    .att-box { width: 22px; height: 22px; border-radius: 4px; display: inline-block; }
     .att-yes { background-color: var(--success-color); }
     .att-no { background-color: var(--danger-color); }
-    .att-empty { background-color: var(--disabled-bg); }
-    .bow-input { width: 70px; padding: 4px; text-align: center; font-size: 12px; margin: 0; }
+    .bow-input { width: 60px; padding: 4px; text-align: center; font-size: 12px; margin: 0; }
 
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; padding: 15px; box-sizing: border-box; }
+    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
     
-    #toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; flex-direction: column; gap: 10px; }
-    .toast { background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; opacity: 0; animation: slideUp 0.3s forwards, fadeOut 0.3s 2.5s forwards; }
+    #toast-container { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; }
+    .toast { background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; text-align: center; opacity: 0; animation: slideUp 0.3s forwards, fadeOut 0.3s 2.5s forwards; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .toast.success { background: var(--success-color); }
     .toast.error { background: var(--danger-color); }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+
+    .theme-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); padding: 12px 0; display: flex; justify-content: center; gap: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); z-index: 90; }
+    .theme-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.2); transition: transform 0.2s; background-size: cover; background-position: center; }
+    .theme-dot:hover { transform: scale(1.15); }
+    
+    .dot-default { background-color: #0b2559; }
+    .dot-dark { background-color: #121212; }
+    .dot-forest { background-color: #2e7d32; }
+    .dot-mc { background-image: url('cimen.png'); background-color: #7cbd6b; border-radius: 8px; }
+    .dot-hw { background-image: url('kabak.png'); background-color: #ff6600; }
+    .dot-md { background-image: url('kalkan.png'); background-color: #8b0000; }
+
+    @media (max-width: 768px) {
+      .concept-theme { display: none !important; }
+      .decor-left, .decor-right { display: none !important; }
+      .panel { padding: 15px; }
+      .admin-menu { gap: 15px; }
+      th, td { padding: 5px; font-size: 12px; }
+      .att-box { width: 16px; height: 16px; }
+      .bow-input { width: 45px; font-size: 11px; }
+    }
   </style>
 </head>
 <body>
 
+  <div class="decor-left"></div>
+  <div class="decor-right"></div>
   <div id="toast-container"></div>
 
   <div id="loginPanel" class="panel">
@@ -82,12 +122,12 @@
       Mevcut Seansın: <span id="uSession" style="color: var(--danger-color);"></span>
     </div>
     
-    <div style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 20px;">
-      <span>Yay Ölçüsü:</span>
-      <select id="uBowLen" style="width: 80px; margin: 0; padding: 5px;"></select>
+    <div style="display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;">
+      <span style="font-size: 14px;">Yay Ölçüsü:</span>
+      <select id="uBowLen" style="width: auto; margin: 0; padding: 8px;"></select>
       <span>/</span>
-      <select id="uBowLbs" style="width: 80px; margin: 0; padding: 5px;"></select>
-      <button class="action-btn btn-available" style="width: auto; padding: 5px 15px;" onclick="updateUserBow()">Kaydet</button>
+      <select id="uBowLbs" style="width: auto; margin: 0; padding: 8px;"></select>
+      <button class="action-btn btn-available" style="width: auto; padding: 8px 15px;" onclick="updateUserBow()">Kaydet</button>
     </div>
 
     <h3 id="sessionTitle">Seanslar</h3>
@@ -96,15 +136,23 @@
 
   <div id="adminPanel" class="panel">
     <h2>Yönetim Paneli</h2>
+    
     <div class="admin-menu">
-      <button onclick="openModal('modalYoklamaAl')">📋 Yoklama Al</button>
-      <button onclick="loadAdminYoklamaTablosu()">📊 Yoklamalar</button>
-      <button onclick="loadAdminSeanslar('Eğitim')">🎯 Eğitim Seansları</button>
-      <button onclick="loadAdminSeanslar('Antrenman')">🏹 Antrenman Seansları</button>
-      <button onclick="openModal('modalYeniUye')">➕ Yeni Üye Ekle</button>
+      <div class="admin-menu-group">
+        <button class="admin-btn btn-grp1" onclick="openModal('modalYoklamaAl')">📋 Yoklama Al</button>
+        <button class="admin-btn btn-grp1" onclick="loadAdminYoklamaTablosu()">📊 Yoklamalar</button>
+      </div>
+      <div class="admin-menu-group">
+        <button class="admin-btn btn-grp2" onclick="loadAdminSeanslar('Eğitim')">🎯 Eğitim Seansları</button>
+        <button class="admin-btn btn-grp2" onclick="loadAdminSeanslar('Antrenman')">🏹 Antrenman Seansları</button>
+      </div>
+      <div class="admin-menu-group">
+        <button class="admin-btn btn-grp3" onclick="openModal('modalYeniUye')">➕ Yeni Üye Ekle</button>
+      </div>
     </div>
+    
     <div id="adminContentArea">
-      <div style="text-align: center; color: var(--disabled-color);">Lütfen yukarıdan bir işlem seçin.</div>
+      <div style="text-align: center; color: var(--disabled-color); font-size: 14px;">Lütfen yukarıdan bir işlem seçin.</div>
     </div>
   </div>
 
@@ -146,8 +194,16 @@
     </div>
   </div>
 
+  <div class="theme-bar">
+    <div class="theme-dot dot-default" onclick="setTheme('default')" title="Klasik"></div>
+    <div class="theme-dot dot-dark" onclick="setTheme('dark')" title="Gece"></div>
+    <div class="theme-dot dot-forest" onclick="setTheme('forest')" title="Orman"></div>
+    <div class="theme-dot dot-mc concept-theme" onclick="setTheme('minecraft')" title="Minecraft"></div>
+    <div class="theme-dot dot-hw concept-theme" onclick="setTheme('halloween')" title="Cadılar Bayramı"></div>
+    <div class="theme-dot dot-md concept-theme" onclick="setTheme('medieval')" title="Orta Çağ"></div>
+  </div>
+
   <script>
-    // DİKKAT: BURADAKİ supabaseClient İSMİ HATA VERMEMESİ İÇİN DEĞİŞTİRİLDİ
     const SUPABASE_URL = 'https://ionmdyvssqqtutmqsunr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlvbm1keXZzc3FxdHV0bXFzdW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5OTAyODgsImV4cCI6MjEwNzU2NjI4OH0.8N1UNStHF9_vwK5X7WBP1pPEfwioB4EYCoY2NnIsmuI';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -164,6 +220,23 @@
     };
 
     let currentUser = null;
+
+    function setTheme(themeName) {
+      document.documentElement.setAttribute('data-theme', themeName);
+      localStorage.setItem('theme', themeName);
+      if(window.innerWidth <= 768 && (themeName === 'minecraft' || themeName === 'halloween' || themeName === 'medieval')) {
+         document.documentElement.setAttribute('data-theme', 'default');
+         localStorage.setItem('theme', 'default');
+      }
+    }
+    const savedTheme = localStorage.getItem('theme');
+    if(savedTheme) setTheme(savedTheme);
+    window.addEventListener('resize', () => {
+      const currentTheme = localStorage.getItem('theme');
+      if(window.innerWidth <= 768 && (currentTheme === 'minecraft' || currentTheme === 'halloween' || currentTheme === 'medieval')) {
+         setTheme('default');
+      }
+    });
 
     function showToast(msg, type = 'success') {
       const c = document.getElementById('toast-container');
@@ -245,7 +318,6 @@
         document.getElementById('uBowLen').value = parts[0] || "";
         document.getElementById('uBowLbs').value = parts[1] || "";
       }
-
       loadUserSessions();
     }
 
@@ -317,15 +389,15 @@
       const listEl = document.getElementById('yoklamaList');
       listEl.innerHTML = '';
       
-      if(users.length === 0) { listEl.innerHTML = "Bu seansta kayıtlı üye yok."; return; }
+      if(users.length === 0) { listEl.innerHTML = "<div style='text-align:center;'>Bu seansta kayıtlı üye yok.</div>"; return; }
 
       users.forEach(u => {
         const isHere = attSet.has(u.id);
         const bText = u.bow_size ? `(${u.bow_size})` : "";
         listEl.innerHTML += `
           <div style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--disabled-bg); align-items:center;">
-            <span><b>${u.name}</b> <span style="font-size:12px;color:var(--disabled-color);">${bText}</span></span>
-            <button class="action-btn ${isHere ? 'btn-full' : 'btn-available'}" style="width:100px; padding:5px;" onclick="markHere('${u.id}', ${w}, '${s}', this)" ${isHere ? 'disabled' : ''}>
+            <span style="font-size:14px;"><b>${u.name}</b> <span style="font-size:12px;color:var(--disabled-color);">${bText}</span></span>
+            <button class="action-btn ${isHere ? 'btn-full' : 'btn-available'}" style="width:90px; padding:8px 5px;" onclick="markHere('${u.id}', ${w}, '${s}', this)" ${isHere ? 'disabled' : ''}>
               ${isHere ? 'Eklendi' : 'Burada'}
             </button>
           </div>
@@ -344,31 +416,30 @@
       const area = document.getElementById('adminContentArea');
       area.innerHTML = `
         <div style="display:flex; gap:10px; margin-bottom:15px; justify-content:center;">
-          <button class="btn" style="width:auto; padding:8px 20px; background:${type==='Eğitim'?'var(--primary-color)':'var(--disabled-color)'};" onclick="loadAdminYoklamaTablosu('Eğitim')">Eğitim</button>
-          <button class="btn" style="width:auto; padding:8px 20px; background:${type==='Antrenman'?'var(--primary-color)':'var(--disabled-color)'};" onclick="loadAdminYoklamaTablosu('Antrenman')">Antrenman</button>
+          <button class="action-btn" style="width:auto; padding:8px 20px; background:${type==='Eğitim'?'var(--primary-color)':'var(--disabled-color)'}; color:white;" onclick="loadAdminYoklamaTablosu('Eğitim')">Eğitim</button>
+          <button class="action-btn" style="width:auto; padding:8px 20px; background:${type==='Antrenman'?'var(--primary-color)':'var(--disabled-color)'}; color:white;" onclick="loadAdminYoklamaTablosu('Antrenman')">Antrenman</button>
         </div>
-        <div id="tabloIcerik" style="overflow-x:auto;">Yükleniyor...</div>
+        <div class="table-responsive" id="tabloIcerik">Yükleniyor...</div>
       `;
 
       const { data: users } = await supabaseClient.from('users').select('id, name, bow_size').eq('user_group', type).order('name');
       const { data: att } = await supabaseClient.from('attendance').select('user_id, week');
       
-      let html = `<table><tr><th>Yay</th><th>Oran</th><th>İsim Soyisim</th>`;
+      let html = `<table><tr><th>Yay</th><th style="text-align:left;">İsim Soyisim</th>`;
       for(let i=1; i<=10; i++) html += `<th>H${i}</th>`;
-      html += `</tr>`;
+      html += `<th>Oran</th></tr>`;
 
       users.forEach(u => {
         const uAtt = att.filter(a => a.user_id === u.id);
         const count = uAtt.length;
         html += `<tr>
           <td><input type="text" class="bow-input" value="${u.bow_size||''}" onchange="adminUpdateBow('${u.id}', this.value)"></td>
-          <td><b>${count}/10</b></td>
-          <td style="text-align:left;">${u.name}</td>`;
+          <td style="text-align:left; white-space:nowrap;">${u.name}</td>`;
         for(let i=1; i<=10; i++) {
           const has = uAtt.some(a => a.week == i);
           html += `<td><div class="att-box ${has ? 'att-yes' : 'att-no'}"></div></td>`;
         }
-        html += `</tr>`;
+        html += `<td><b>${count}/10</b></td></tr>`;
       });
       html += `</table>`;
       document.getElementById('tabloIcerik').innerHTML = html;
@@ -393,7 +464,7 @@
 
       list.forEach(s => {
         const inThis = users.filter(u => u.current_session === s);
-        let namesHtml = inThis.length ? inThis.map(u => `<div style="font-size:13px; text-align:left; border-bottom:1px solid var(--disabled-bg); padding:4px 0;">${u.name} <span style="color:var(--disabled-color);">(${u.bow_size||'-'})</span></div>`).join('') : '<div style="font-size:13px;">Kimse yok.</div>';
+        let namesHtml = inThis.length ? inThis.map(u => `<div style="font-size:13px; text-align:left; border-bottom:1px solid var(--disabled-bg); padding:5px 0;">${u.name} <span style="color:var(--disabled-color);">(${u.bow_size||'-'})</span></div>`).join('') : '<div style="font-size:13px; padding:5px 0;">Kimse yok.</div>';
         
         grid.innerHTML += `
           <div class="session-card">
