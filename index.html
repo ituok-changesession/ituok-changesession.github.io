@@ -42,9 +42,12 @@
     
     .header-info { text-align: center; margin-bottom: 20px; font-size: 15px; font-weight: bold; background: var(--disabled-bg); padding: 15px; border-radius: 8px; }
     
-    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-top: 20px; }
+    .days-wrapper { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; width: 100%; }
+    .day-column { display: flex; flex-direction: column; gap: 15px; }
+    .day-title { text-align: center; font-weight: bold; font-size: 18px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-color); margin-bottom: 5px; text-transform: uppercase; }
+    
     .session-card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--disabled-bg); }
-    .session-time { font-size: 15px; font-weight: bold; margin-bottom: 10px; color: var(--primary-color); }
+    .session-time { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: var(--primary-color); }
     .session-stats { font-size: 14px; margin-bottom: 10px; }
     
     .action-btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; font-size: 14px; }
@@ -52,8 +55,7 @@
     .btn-full { background: var(--disabled-color); color: white; }
     .btn-available { background: var(--success-color); color: white; }
 
-    .admin-menu { display: flex; flex-direction: column; gap: 25px; margin-bottom: 25px; }
-    .admin-menu-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .admin-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
     .admin-btn { padding: 15px; font-size: 14px; border-radius: 8px; border: none; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
     .admin-btn:hover { transform: translateY(-2px); }
     .btn-grp1 { background: var(--primary-color); color: var(--btn-text); }
@@ -96,7 +98,8 @@
       .concept-theme { display: none !important; }
       .decor-left, .decor-right { display: none !important; }
       .panel { padding: 15px; }
-      .admin-menu { gap: 15px; }
+      .admin-menu { grid-template-columns: 1fr; gap: 10px; }
+      .days-wrapper { grid-template-columns: 1fr; gap: 15px; }
       th, td { padding: 5px; font-size: 12px; }
       .att-box { width: 16px; height: 16px; }
       .bow-input { width: 45px; font-size: 11px; }
@@ -131,24 +134,18 @@
     </div>
 
     <h3 id="sessionTitle">Seanslar</h3>
-    <div class="grid-container" id="userGrid"></div>
+    <div id="userGrid"></div>
   </div>
 
   <div id="adminPanel" class="panel">
     <h2>Yönetim Paneli</h2>
     
     <div class="admin-menu">
-      <div class="admin-menu-group">
-        <button class="admin-btn btn-grp1" onclick="openModal('modalYoklamaAl')">📋 Yoklama Al</button>
-        <button class="admin-btn btn-grp1" onclick="loadAdminYoklamaTablosu()">📊 Yoklamalar</button>
-      </div>
-      <div class="admin-menu-group">
-        <button class="admin-btn btn-grp2" onclick="loadAdminSeanslar('Eğitim')">🎯 Eğitim Seansları</button>
-        <button class="admin-btn btn-grp2" onclick="loadAdminSeanslar('Antrenman')">🏹 Antrenman Seansları</button>
-      </div>
-      <div class="admin-menu-group">
-        <button class="admin-btn btn-grp3" onclick="openModal('modalYeniUye')">➕ Yeni Üye Ekle</button>
-      </div>
+      <button class="admin-btn btn-grp1" onclick="openModal('modalYoklamaAl')">📋 Yoklama Al</button>
+      <button class="admin-btn btn-grp1" onclick="loadAdminYoklamaTablosu()">📊 Yoklamalar</button>
+      <button class="admin-btn btn-grp2" onclick="loadAdminSeanslar('Eğitim')">🎯 Eğitim Seansları</button>
+      <button class="admin-btn btn-grp2" onclick="loadAdminSeanslar('Antrenman')">🏹 Antrenman Seansları</button>
+      <button class="admin-btn btn-grp3" onclick="openModal('modalYeniUye')">➕ Yeni Üye Ekle</button>
     </div>
     
     <div id="adminContentArea">
@@ -342,26 +339,40 @@
       users.forEach(u => { if(counts[u.current_session] !== undefined) counts[u.current_session]++; });
 
       const grid = document.getElementById('userGrid');
-      grid.innerHTML = '';
       
+      const daysObj = {};
       list.forEach(s => {
-        const count = counts[s];
-        const avail = cap - count;
-        const isCur = currentUser.current_session === s;
-        const isFull = avail <= 0;
-        
-        let btnH = `<button class="action-btn btn-available" onclick="changeUserSession('${s}')">Geçiş Yap</button>`;
-        if(isCur) btnH = `<button class="action-btn btn-current" disabled>Mevcut Seans</button>`;
-        else if(isFull) btnH = `<button class="action-btn btn-full" disabled>Dolu</button>`;
-
-        grid.innerHTML += `
-          <div class="session-card">
-            <div class="session-time">${s}</div>
-            <div class="session-stats">Dolu: ${count}/${cap} | Boş: ${avail}</div>
-            ${btnH}
-          </div>
-        `;
+        const d = s.split(' ')[0];
+        if(!daysObj[d]) daysObj[d] = [];
+        daysObj[d].push(s);
       });
+
+      let html = `<div class="days-wrapper">`;
+      for(let day in daysObj) {
+        html += `<div class="day-column"><div class="day-title">${day}</div>`;
+        daysObj[day].forEach(s => {
+          const count = counts[s];
+          const avail = cap - count;
+          const isCur = currentUser.current_session === s;
+          const isFull = avail <= 0;
+          
+          let btnH = `<button class="action-btn btn-available" onclick="changeUserSession('${s}')">Geçiş Yap</button>`;
+          if(isCur) btnH = `<button class="action-btn btn-current" disabled>Mevcut Seans</button>`;
+          else if(isFull) btnH = `<button class="action-btn btn-full" disabled>Dolu</button>`;
+
+          const timeOnly = s.substring(s.indexOf(' ') + 1);
+          html += `
+            <div class="session-card">
+              <div class="session-time">${timeOnly}</div>
+              <div class="session-stats">Dolu: ${count}/${cap} | Boş: ${avail}</div>
+              ${btnH}
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+      html += `</div>`;
+      grid.innerHTML = html;
     }
 
     async function changeUserSession(newS) {
@@ -452,7 +463,7 @@
 
     async function loadAdminSeanslar(type) {
       const area = document.getElementById('adminContentArea');
-      area.innerHTML = `<h3>${type} Seans Durumları</h3><div class="grid-container" id="adminGrid">Yükleniyor...</div>`;
+      area.innerHTML = `<h3>${type} Seans Durumları</h3><div id="adminGrid">Yükleniyor...</div>`;
       
       const list = type === 'Eğitim' ? config.egitim.sessions : config.antrenman.sessions;
       const cap = type === 'Eğitim' ? config.egitim.cap : config.antrenman.cap;
@@ -460,20 +471,34 @@
       const { data: users } = await supabaseClient.from('users').select('name, current_session, bow_size').eq('user_group', type);
       
       const grid = document.getElementById('adminGrid');
-      grid.innerHTML = '';
-
+      
+      const daysObj = {};
       list.forEach(s => {
-        const inThis = users.filter(u => u.current_session === s);
-        let namesHtml = inThis.length ? inThis.map(u => `<div style="font-size:13px; text-align:left; border-bottom:1px solid var(--disabled-bg); padding:5px 0;">${u.name} <span style="color:var(--disabled-color);">(${u.bow_size||'-'})</span></div>`).join('') : '<div style="font-size:13px; padding:5px 0;">Kimse yok.</div>';
-        
-        grid.innerHTML += `
-          <div class="session-card">
-            <div class="session-time">${s}</div>
-            <div class="session-stats"><b>${inThis.length}/${cap}</b></div>
-            <div style="max-height:150px; overflow-y:auto; border:1px solid var(--disabled-color); padding:5px; border-radius:4px;">${namesHtml}</div>
-          </div>
-        `;
+        const d = s.split(' ')[0];
+        if(!daysObj[d]) daysObj[d] = [];
+        daysObj[d].push(s);
       });
+
+      let html = `<div class="days-wrapper">`;
+      for(let day in daysObj) {
+        html += `<div class="day-column"><div class="day-title">${day}</div>`;
+        daysObj[day].forEach(s => {
+          const inThis = users.filter(u => u.current_session === s);
+          let namesHtml = inThis.length ? inThis.map(u => `<div style="font-size:13px; text-align:left; border-bottom:1px solid var(--disabled-bg); padding:5px 0;">${u.name} <span style="color:var(--disabled-color);">(${u.bow_size||'-'})</span></div>`).join('') : '<div style="font-size:13px; padding:5px 0;">Kimse yok.</div>';
+          
+          const timeOnly = s.substring(s.indexOf(' ') + 1);
+          html += `
+            <div class="session-card">
+              <div class="session-time">${timeOnly}</div>
+              <div class="session-stats"><b>${inThis.length}/${cap}</b></div>
+              <div style="max-height:150px; overflow-y:auto; border:1px solid var(--disabled-color); padding:5px; border-radius:4px;">${namesHtml}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+      html += `</div>`;
+      grid.innerHTML = html;
     }
 
     async function addNewUser() {
