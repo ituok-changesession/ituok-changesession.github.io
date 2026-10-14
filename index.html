@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Okçuluk Seans & Yoklama Sistemi</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg-color: #f0f2f5; --text-color: #333; --card-bg: #ffffff;
+      --primary-color: #0b2559; --btn-text: #ffffff;
+      --success-color: #28a745; --danger-color: #dc3545;
+      --disabled-color: #6c757d; --disabled-bg: #e9ecef;
+    }
+
+    [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --primary-color: #bb86fc; }
+    [data-theme="forest"] { --bg-color: #e8f5e9; --text-color: #1b5e20; --card-bg: #ffffff; --primary-color: #2e7d32; }
+
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 15px; padding-bottom: 80px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    
+    .panel { background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 100%; max-width: 1000px; margin-top: 20px; display: none; }
+    #loginPanel { max-width: 400px; margin-top: 50px; display: block; }
+    
+    h1, h2, h3 { text-align: center; margin-top: 0; }
+    input, select { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid var(--disabled-color); border-radius: 6px; box-sizing: border-box; font-size: 15px; background: var(--card-bg); color: var(--text-color); }
+    
+    .btn { width: 100%; padding: 12px; margin-top: 15px; background: var(--primary-color); color: var(--btn-text); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; }
+    .btn:disabled { background: var(--disabled-color); cursor: not-allowed; }
+    .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+    
+    .header-info { text-align: center; margin-bottom: 20px; font-size: 16px; font-weight: bold; background: var(--disabled-bg); padding: 15px; border-radius: 8px; }
+    
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
+    .session-card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--disabled-bg); }
+    .session-time { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: var(--primary-color); }
+    .session-stats { font-size: 14px; margin-bottom: 10px; }
+    
+    .action-btn { padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
+    .btn-current { background: var(--danger-color); color: white; }
+    .btn-full { background: var(--disabled-color); color: white; }
+    .btn-available { background: var(--success-color); color: white; }
+
+    .admin-menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .admin-menu button { padding: 15px; font-size: 14px; border-radius: 8px; border: none; background: var(--primary-color); color: white; font-weight: bold; cursor: pointer; }
+    
+    #adminContentArea { margin-top: 20px; padding: 20px; border: 2px dashed var(--disabled-color); border-radius: 8px; overflow-x: auto; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: center; }
+    th, td { border: 1px solid var(--disabled-color); padding: 8px; }
+    th { background: var(--primary-color); color: white; }
+    .att-box { width: 25px; height: 25px; border-radius: 4px; display: inline-block; }
+    .att-yes { background-color: var(--success-color); }
+    .att-no { background-color: var(--danger-color); }
+    .att-empty { background-color: var(--disabled-bg); }
+    .bow-input { width: 70px; padding: 4px; text-align: center; font-size: 12px; margin: 0; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
+    
+    #toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; opacity: 0; animation: slideUp 0.3s forwards, fadeOut 0.3s 2.5s forwards; }
+    .toast.success { background: var(--success-color); }
+    .toast.error { background: var(--danger-color); }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+  </style>
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <div id="loginPanel" class="panel">
+    <h2>Sisteme Giriş</h2>
+    <input type="text" id="loginName" placeholder="İsim Soyisim" required>
+    <input type="text" id="loginNo" placeholder="Öğrenci No / Şifre" required>
+    <button class="btn" id="loginBtn" onclick="appLogin()">Giriş Yap</button>
+  </div>
+
+  <div id="userPanel" class="panel">
+    <div class="header-info">
+      Kullanıcı: <span id="uName" style="color: var(--primary-color);"></span> (<span id="uGroup"></span>)<br>
+      Mevcut Seansın: <span id="uSession" style="color: var(--danger-color);"></span>
+    </div>
+    
+    <div style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 20px;">
+      <span>Yay Ölçüsü:</span>
+      <select id="uBowLen" style="width: 80px; margin: 0; padding: 5px;"></select>
+      <span>/</span>
+      <select id="uBowLbs" style="width: 80px; margin: 0; padding: 5px;"></select>
+      <button class="action-btn btn-available" style="width: auto; padding: 5px 15px;" onclick="updateUserBow()">Kaydet</button>
+    </div>
+
+    <h3 id="sessionTitle">Seanslar</h3>
+    <div class="grid-container" id="userGrid"></div>
+  </div>
+
+  <div id="adminPanel" class="panel">
+    <h2>Yönetim Paneli</h2>
+    <div class="admin-menu">
+      <button onclick="openModal('modalYoklamaAl')">📋 Yoklama Al</button>
+      <button onclick="loadAdminYoklamaTablosu()">📊 Yoklamalar</button>
+      <button onclick="loadAdminSeanslar('Eğitim')">🎯 Eğitim Seansları</button>
+      <button onclick="loadAdminSeanslar('Antrenman')">🏹 Antrenman Seansları</button>
+      <button onclick="openModal('modalYeniUye')">➕ Yeni Üye Ekle</button>
+    </div>
+    <div id="adminContentArea">
+      <div style="text-align: center; color: var(--disabled-color);">Lütfen yukarıdan bir işlem seçin.</div>
+    </div>
+  </div>
+
+  <div id="modalYoklamaAl" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Yoklama Başlat</h3>
+      <select id="yaWeek">
+        <option value="1">1. Hafta</option><option value="2">2. Hafta</option><option value="3">3. Hafta</option>
+        <option value="4">4. Hafta</option><option value="5">5. Hafta</option><option value="6">6. Hafta</option>
+        <option value="7">7. Hafta</option><option value="8">8. Hafta</option><option value="9">9. Hafta</option>
+        <option value="10">10. Hafta</option>
+      </select>
+      <select id="yaGroup" onchange="fillYaSessions()">
+        <option value="Eğitim">Eğitim</option>
+        <option value="Antrenman">Antrenman</option>
+      </select>
+      <select id="yaSession"></select>
+      <div class="btn-row">
+        <button class="btn" onclick="startYoklama()">İlerle</button>
+        <button class="btn btn-full" onclick="closeModal('modalYoklamaAl')">İptal</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalYeniUye" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Yeni Üye Ekle</h3>
+      <input type="text" id="nuName" placeholder="İsim Soyisim">
+      <input type="text" id="nuNo" placeholder="Öğrenci No">
+      <select id="nuGroup" onchange="toggleNuSession()">
+        <option value="Eğitim">Eğitim</option>
+        <option value="Antrenman">Antrenman</option>
+      </select>
+      <select id="nuSession"></select>
+      <div class="btn-row">
+        <button class="btn" onclick="addNewUser()">Ekle</button>
+        <button class="btn btn-full" onclick="closeModal('modalYeniUye')">İptal</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'BURAYA_SUPABASE_URL_GELECEK';
+    const SUPABASE_KEY = 'BURAYA_SUPABASE_ANON_KEY_GELECEK';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const config = {
+      egitim: {
+        cap: 17,
+        sessions: ['Pazartesi 16.00-17.00', 'Pazartesi 17.10-18.10', 'Pazartesi 18.20-19.20', 'Çarşamba 16.00-17.00', 'Çarşamba 17.10-18.10', 'Çarşamba 18.20-19.20']
+      },
+      antrenman: {
+        cap: 12,
+        sessions: ['Cuma 13.30-15.00', 'Cuma 15.00-16.30', 'Cuma 16.30-18.00', 'Cumartesi 13.30-15.00', 'Cumartesi 15.00-16.30', 'Cumartesi 16.30-18.00']
+      }
+    };
+
+    let currentUser = null;
+
+    function showToast(msg, type = 'success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerText = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 2800);
+    }
+
+    function generateBowOpts(lenId, lbsId) {
+      const lenEl = document.getElementById(lenId);
+      const lbsEl = document.getElementById(lbsId);
+      lenEl.innerHTML = '<option value="">-</option>';
+      lbsEl.innerHTML = '<option value="">-</option>';
+      for(let i=66; i<=70; i+=2) lenEl.innerHTML += `<option value="${i}">${i}</option>`;
+      for(let i=22; i<=30; i+=2) lbsEl.innerHTML += `<option value="${i}">${i}</option>`;
+    }
+    generateBowOpts('uBowLen', 'uBowLbs');
+
+    function fillYaSessions() {
+      const g = document.getElementById('yaGroup').value;
+      const sEl = document.getElementById('yaSession');
+      sEl.innerHTML = '';
+      const list = g === 'Eğitim' ? config.egitim.sessions : config.antrenman.sessions;
+      list.forEach(s => sEl.innerHTML += `<option value="${s}">${s}</option>`);
+    }
+
+    function toggleNuSession() {
+      const g = document.getElementById('nuGroup').value;
+      const sEl = document.getElementById('nuSession');
+      sEl.innerHTML = '<option value="">Atanmamış</option>';
+      if(g === 'Eğitim') {
+        config.egitim.sessions.forEach(s => sEl.innerHTML += `<option value="${s}">${s}</option>`);
+      }
+    }
+    toggleNuSession();
+
+    function openModal(id) { 
+      document.getElementById(id).style.display = 'flex'; 
+      if(id === 'modalYoklamaAl') fillYaSessions();
+    }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    async function appLogin() {
+      const name = document.getElementById('loginName').value.trim().toLocaleLowerCase('tr-TR');
+      const no = document.getElementById('loginNo').value.trim();
+      const btn = document.getElementById('loginBtn');
+      if(!name || !no) return;
+
+      btn.disabled = true; btn.innerText = "Bağlanıyor...";
+      
+      const { data, error } = await supabase.from('users').select('*').eq('name_lower', name).eq('no', no).single();
+      
+      if(error || !data) {
+        showToast("Kayıt bulunamadı.", "error");
+        btn.disabled = false; btn.innerText = "Giriş Yap";
+        return;
+      }
+
+      currentUser = data;
+      document.getElementById('loginPanel').style.display = 'none';
+      
+      if(currentUser.role === 'admin') {
+        document.getElementById('adminPanel').style.display = 'block';
+      } else {
+        document.getElementById('userPanel').style.display = 'block';
+        initUserPanel();
+      }
+    }
+
+    async function initUserPanel() {
+      document.getElementById('uName').innerText = currentUser.name;
+      document.getElementById('uGroup').innerText = currentUser.user_group;
+      document.getElementById('uSession').innerText = currentUser.current_session || "Atanmamış";
+      
+      if(currentUser.bow_size) {
+        const parts = currentUser.bow_size.split('/');
+        document.getElementById('uBowLen').value = parts[0] || "";
+        document.getElementById('uBowLbs').value = parts[1] || "";
+      }
+
+      loadUserSessions();
+    }
+
+    async function updateUserBow() {
+      const l = document.getElementById('uBowLen').value;
+      const b = document.getElementById('uBowLbs').value;
+      const val = (l && b) ? `${l}/${b}` : "";
+      
+      const { error } = await supabase.from('users').update({ bow_size: val }).eq('id', currentUser.id);
+      if(error) showToast("Hata!", "error");
+      else { currentUser.bow_size = val; showToast("Yay ölçüsü kaydedildi."); }
+    }
+
+    async function loadUserSessions() {
+      const g = currentUser.user_group;
+      const list = g === 'Eğitim' ? config.egitim.sessions : config.antrenman.sessions;
+      const cap = g === 'Eğitim' ? config.egitim.cap : config.antrenman.cap;
+      
+      const { data: users } = await supabase.from('users').select('current_session');
+      let counts = {};
+      list.forEach(s => counts[s] = 0);
+      users.forEach(u => { if(counts[u.current_session] !== undefined) counts[u.current_session]++; });
+
+      const grid = document.getElementById('userGrid');
+      grid.innerHTML = '';
+      
+      list.forEach(s => {
+        const count = counts[s];
+        const avail = cap - count;
+        const isCur = currentUser.current_session === s;
+        const isFull = avail <= 0;
+        
+        let btnH = `<button class="action-btn btn-available" onclick="changeUserSession('${s}')">Geçiş Yap</button>`;
+        if(isCur) btnH = `<button class="action-btn btn-current" disabled>Mevcut Seans</button>`;
+        else if(isFull) btnH = `<button class="action-btn btn-full" disabled>Dolu</button>`;
+
+        grid.innerHTML += `
+          <div class="session-card">
+            <div class="session-time">${s}</div>
+            <div class="session-stats">Dolu: ${count}/${cap} | Boş: ${avail}</div>
+            ${btnH}
+          </div>
+        `;
+      });
+    }
+
+    async function changeUserSession(newS) {
+      const { error } = await supabase.from('users').update({ current_session: newS }).eq('id', currentUser.id);
+      if(error) { showToast("Kapasite veya bağlantı hatası.", "error"); return; }
+      currentUser.current_session = newS;
+      document.getElementById('uSession').innerText = newS;
+      showToast("Seans değiştirildi.");
+      loadUserSessions();
+    }
+
+    async function startYoklama() {
+      const w = document.getElementById('yaWeek').value;
+      const g = document.getElementById('yaGroup').value;
+      const s = document.getElementById('yaSession').value;
+      closeModal('modalYoklamaAl');
+      
+      const area = document.getElementById('adminContentArea');
+      area.innerHTML = `<h3>Yoklama: ${w}. Hafta | ${s}</h3><div id="yoklamaList" style="display:flex; flex-direction:column; gap:10px;">Yükleniyor...</div>`;
+      
+      const { data: users } = await supabase.from('users').select('id, name, bow_size').eq('current_session', s).order('name');
+      const { data: att } = await supabase.from('attendance').select('user_id').eq('week', w).eq('session_name', s);
+      
+      const attSet = new Set(att.map(a => a.user_id));
+      const listEl = document.getElementById('yoklamaList');
+      listEl.innerHTML = '';
+      
+      if(users.length === 0) { listEl.innerHTML = "Bu seansta kayıtlı üye yok."; return; }
+
+      users.forEach(u => {
+        const isHere = attSet.has(u.id);
+        const bText = u.bow_size ? `(${u.bow_size})` : "";
+        listEl.innerHTML += `
+          <div style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--disabled-bg); align-items:center;">
+            <span><b>${u.name}</b> <span style="font-size:12px;color:var(--disabled-color);">${bText}</span></span>
+            <button class="action-btn ${isHere ? 'btn-full' : 'btn-available'}" style="width:100px; padding:5px;" onclick="markHere('${u.id}', ${w}, '${s}', this)" ${isHere ? 'disabled' : ''}>
+              ${isHere ? 'Eklendi' : 'Burada'}
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    async function markHere(uid, w, s, btn) {
+      btn.disabled = true; btn.innerText = "...";
+      const { error } = await supabase.from('attendance').insert([{ user_id: uid, week: w, session_name: s }]);
+      if(error) { btn.disabled = false; btn.innerText = "Burada"; showToast("Hata!", "error"); }
+      else { btn.className = "action-btn btn-full"; btn.innerText = "Eklendi"; showToast("Eklendi!"); }
+    }
+
+    async function loadAdminYoklamaTablosu(type = 'Eğitim') {
+      const area = document.getElementById('adminContentArea');
+      area.innerHTML = `
+        <div style="display:flex; gap:10px; margin-bottom:15px; justify-content:center;">
+          <button class="btn" style="width:auto; padding:8px 20px; background:${type==='Eğitim'?'var(--primary-color)':'var(--disabled-color)'};" onclick="loadAdminYoklamaTablosu('Eğitim')">Eğitim</button>
+          <button class="btn" style="width:auto; padding:8px 20px; background:${type==='Antrenman'?'var(--primary-color)':'var(--disabled-color)'};" onclick="loadAdminYoklamaTablosu('Antrenman')">Antrenman</button>
+        </div>
+        <div id="tabloIcerik" style="overflow-x:auto;">Yükleniyor...</div>
+      `;
+
+      const { data: users } = await supabase.from('users').select('id, name, bow_size').eq('user_group', type).order('name');
+      const { data: att } = await supabase.from('attendance').select('user_id, week');
+      
+      let html = `<table><tr><th>Yay</th><th>Oran</th><th>İsim Soyisim</th>`;
+      for(let i=1; i<=10; i++) html += `<th>H${i}</th>`;
+      html += `</tr>`;
+
+      users.forEach(u => {
+        const uAtt = att.filter(a => a.user_id === u.id);
+        const count = uAtt.length;
+        html += `<tr>
+          <td><input type="text" class="bow-input" value="${u.bow_size||''}" onchange="adminUpdateBow('${u.id}', this.value)"></td>
+          <td><b>${count}/10</b></td>
+          <td style="text-align:left;">${u.name}</td>`;
+        for(let i=1; i<=10; i++) {
+          const has = uAtt.some(a => a.week == i);
+          html += `<td><div class="att-box ${has ? 'att-yes' : 'att-no'}"></div></td>`;
+        }
+        html += `</tr>`;
+      });
+      html += `</table>`;
+      document.getElementById('tabloIcerik').innerHTML = html;
+    }
+
+    async function adminUpdateBow(uid, val) {
+      await supabase.from('users').update({ bow_size: val }).eq('id', uid);
+      showToast("Yay güncellendi");
+    }
+
+    async function loadAdminSeanslar(type) {
+      const area = document.getElementById('adminContentArea');
+      area.innerHTML = `<h3>${type} Seans Durumları</h3><div class="grid-container" id="adminGrid">Yükleniyor...</div>`;
+      
+      const list = type === 'Eğitim' ? config.egitim.sessions : config.antrenman.sessions;
+      const cap = type === 'Eğitim' ? config.egitim.cap : config.antrenman.cap;
+      
+      const { data: users } = await supabase.from('users').select('name, current_session, bow_size').eq('user_group', type);
+      
+      const grid = document.getElementById('adminGrid');
+      grid.innerHTML = '';
+
+      list.forEach(s => {
+        const inThis = users.filter(u => u.current_session === s);
+        let namesHtml = inThis.length ? inThis.map(u => `<div style="font-size:13px; text-align:left; border-bottom:1px solid var(--disabled-bg); padding:4px 0;">${u.name} <span style="color:var(--disabled-color);">(${u.bow_size||'-'})</span></div>`).join('') : '<div style="font-size:13px;">Kimse yok.</div>';
+        
+        grid.innerHTML += `
+          <div class="session-card">
+            <div class="session-time">${s}</div>
+            <div class="session-stats"><b>${inThis.length}/${cap}</b></div>
+            <div style="max-height:150px; overflow-y:auto; border:1px solid var(--disabled-color); padding:5px; border-radius:4px;">${namesHtml}</div>
+          </div>
+        `;
+      });
+    }
+
+    async function addNewUser() {
+      const name = document.getElementById('nuName').value.trim();
+      const no = document.getElementById('nuNo').value.trim();
+      const grp = document.getElementById('nuGroup').value;
+      const sess = document.getElementById('nuSession').value;
+      
+      if(!name || !no) return;
+      
+      const obj = {
+        name: name,
+        name_lower: name.toLocaleLowerCase('tr-TR'),
+        no: no,
+        role: 'user',
+        user_group: grp,
+        default_session: grp === 'Eğitim' ? sess : null,
+        current_session: sess || null
+      };
+
+      const { error } = await supabase.from('users').insert([obj]);
+      if(error) showToast("Hata oluştu.", "error");
+      else { showToast("Üye eklendi!"); closeModal('modalYeniUye'); document.getElementById('nuName').value=''; document.getElementById('nuNo').value=''; }
+    }
+  </script>
+</body>
+</html>
