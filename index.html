@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Okçuluk Seans & Yoklama Sistemi</title>
+  <meta name="description" content="İTÜ Okçuluk Kulübü üyeleri için haftalık eğitim ve antrenman seans seçimi, yay ölçüsü belirleme ve yoklama sistemi.">
+  <meta name="keywords" content="itü okçuluk, itü ok, okçuluk kulübü, itü ok seans, itü okçuluk seans, seans seçimi, yoklama, itü, okçuluk">
+  <meta name="author" content="İTÜ Okçuluk Kulübü">
+  <title>İTÜ Okçuluk Kulübü - Seans ve Yoklama Sistemi</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -115,7 +118,7 @@
   <div id="toast-container"></div>
 
   <div id="loginPanel" class="panel">
-    <h2>Sisteme Giriş</h2>
+    <h2>İTÜ Okçuluk<br><span style="font-size: 18px; font-weight: normal;">Seans ve Yoklama Sistemi</span></h2>
     <input type="text" id="loginName" placeholder="İsim Soyisim" required>
     <input type="text" id="loginNo" placeholder="Öğrenci No" required>
     <button class="btn" id="loginBtn" onclick="appLogin()">Giriş Yap</button>
@@ -137,6 +140,8 @@
 
     <h3 id="sessionTitle">Seanslar</h3>
     <div id="userGrid"></div>
+    
+    <button id="cancelSessionBtn" class="action-btn" style="background: var(--danger-color); color: white; margin-top: 20px; display: none;" onclick="changeUserSession(null)">❌ Bu Hafta Gelmeyeceğim (Seansı İptal Et)</button>
   </div>
 
   <div id="adminPanel" class="panel">
@@ -310,7 +315,7 @@
     async function initUserPanel() {
       document.getElementById('uName').innerText = currentUser.name;
       document.getElementById('uGroup').innerText = currentUser.user_group;
-      document.getElementById('uSession').innerText = currentUser.current_session || "Atanmamış";
+      document.getElementById('uSession').innerText = currentUser.current_session || "Atanmamış / İptal Edildi";
       
       if(currentUser.bow_size) {
         const parts = currentUser.bow_size.split('/');
@@ -341,6 +346,13 @@
       users.forEach(u => { if(counts[u.current_session] !== undefined) counts[u.current_session]++; });
 
       const grid = document.getElementById('userGrid');
+      const cancelBtn = document.getElementById('cancelSessionBtn');
+      
+      if(currentUser.current_session) {
+         cancelBtn.style.display = 'block';
+      } else {
+         cancelBtn.style.display = 'none';
+      }
       
       const daysObj = {};
       list.forEach(s => {
@@ -381,8 +393,8 @@
       const { error } = await supabaseClient.from('users').update({ current_session: newS }).eq('id', currentUser.id);
       if(error) { showToast("Kapasite veya bağlantı hatası.", "error"); return; }
       currentUser.current_session = newS;
-      document.getElementById('uSession').innerText = newS;
-      showToast("Seans değiştirildi.");
+      document.getElementById('uSession').innerText = newS || "Atanmamış / İptal Edildi";
+      showToast(newS ? "Seans değiştirildi." : "Seans iptal edildi.", newS ? "success" : "info");
       loadUserSessions();
     }
 
