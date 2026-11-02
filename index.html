@@ -225,6 +225,18 @@
 
     let currentUser = null;
 
+    // Siber Güvenlik (XSS - Cross Site Scripting) Filtresi
+    // Veritabanından gelen metinleri ekrana basmadan önce zararlı HTML/JS sembollerini temizler.
+    function escapeHTML(str) {
+      if (!str) return "";
+      return str.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     function setTheme(themeName) {
       document.documentElement.setAttribute('data-theme', themeName);
       localStorage.setItem('theme', themeName);
@@ -293,7 +305,6 @@
 
       btn.disabled = true; btn.innerText = "Bağlanıyor...";
       
-      // Artık sadece "no" (Öğrenci Numarası) üzerinden kayıt çekiyoruz.
       const { data, error } = await supabaseClient.from('users').select('*').eq('no', no).single();
       
       if(error || !data) {
@@ -302,11 +313,9 @@
         return;
       }
 
-      // Veritabanından gelen tam isim ve (varsa) nickname'i Türkçe karakter duyarlı küçültüyoruz.
       const dbNameLower = data.name_lower || "";
       const dbNickLower = data.nickname ? data.nickname.toLocaleLowerCase('tr-TR') : dbNameLower;
 
-      // Kullanıcının yazdığı giriş metni (name) ne tam isimle ne de nickname ile eşleşmiyorsa reddet.
       if(name !== dbNameLower && name !== dbNickLower) {
         showToast("İsim veya Nickname hatalı.", "error");
         btn.disabled = false; btn.innerText = "Giriş Yap";
@@ -325,7 +334,7 @@
     }
 
     async function initUserPanel() {
-      // Sadece üst taraftaki başlıkta varsa nickname, yoksa tam adı göster.
+      // innerText kullanıldığı için burası doğal olarak XSS korumalıdır
       document.getElementById('uName').innerText = currentUser.nickname || currentUser.name;
       document.getElementById('uGroup').innerText = currentUser.user_group;
       document.getElementById('uSession').innerText = currentUser.current_session || "Atanmamış / İptal Edildi";
@@ -432,9 +441,13 @@
       users.forEach(u => {
         const isHere = attSet.has(u.id);
         const bText = u.bow_size ? `(${u.bow_size})` : "";
+        // XSS Koruması uygulanıyor:
+        const safeName = escapeHTML(u.name);
+        const safeBowText = escapeHTML(bText);
+
         listEl.innerHTML += `
           <div style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--disabled-bg); align-items:center;">
-            <span style="font-size:14px;"><b>${u.name}</b> <span style="font-size:12px;color:var(--disabled-color);">${bText}</span></span>
+            <span style="font-size:14px;"><b>${safeName}</b> <span style="font-size:12px;color:var(--disabled-color);">${safeBowText}</span></span>
             <button class="action-btn ${isHere ? 'btn-full' : 'btn-available'}" style="width:90px; padding:8px 5px;" onclick="markHere('${u.id}', ${w}, '${s}', this)" ${isHere ? 'disabled' : ''}>
               ${isHere ? 'Eklendi' : 'Burada'}
             </button>
@@ -470,9 +483,13 @@
       users.forEach(u => {
         const uAtt = att.filter(a => a.user_id === u.id);
         const count = uAtt.length;
+        // XSS Koruması:
+        const safeName = escapeHTML(u.name);
+        const safeBow = escapeHTML(u.bow_size || '');
+
         html += `<tr>
-          <td><input type="text" class="bow-input" value="${u.bow_size||''}" onchange="adminUpdateBow('${u.id}', this.value)"></td>
-          <td style="text-align:left; white-space:nowrap;">${u.name}</td>`;
+          <td><input type="text" class="bow-input" value="${safeBow}" onchange="adminUpdateBow('${u.id}', this.value)"></td>
+          <td style="text-align:left; white-space:nowrap;">${safeName}</td>`;
         for(let i=1; i<=10; i++) {
           const has = uAtt.some(a => a.week == i);
           html += `<td><div class="att-box ${has ? 'att-yes' : 'att-no'}"></div></td>`;
@@ -511,7 +528,13 @@
         html += `<div class="day-column"><div class="day-title">${day}</div>`;
         daysObj[day].forEach(s => {
           const inThis = users.filter(u => u.current_session === s);
-          let namesHtml = inThis.length ? inThis.map(u => `<div style="font-size:13px; text-align:left; border-bottom:1px solid var(--disabled-bg); padding:5px 0;">${u.name} <span style="color:var(--disabled-color);">(${u.bow_size||'-'})</span></div>`).join('') : '<div style="font-size:13px; padding:5px 0;">Kimse yok.</div>';
+          
+          // XSS Koruması uygulanarak HTML oluşturuluyor
+          let namesHtml = inThis.length ? inThis.map(u => {
+            const safeName = escapeHTML(u.name);
+            const safeBow = escapeHTML(u.bow_size || '-');
+            return `<div style="font-size:13px; text-align:left; border-bottom:1px solid var(--disabled-bg); padding:5px 0;">${safeName} <span style="color:var(--disabled-color);">(${safeBow})</span></div>`;
+          }).join('') : '<div style="font-size:13px; padding:5px 0;">Kimse yok.</div>';
           
           const timeOnly = s.substring(s.indexOf(' ') + 1);
           html += `
@@ -538,7 +561,7 @@
       
       const obj = {
         name: name,
-        nickname: name, // Yeni eklenen üyelerde nickname direkt tam isme eşitlenecek.
+        nickname: name,
         name_lower: name.toLocaleLowerCase('tr-TR'),
         no: no,
         role: 'user',
