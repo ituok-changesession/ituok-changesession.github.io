@@ -212,7 +212,13 @@
   <script>
     const SUPABASE_URL = 'https://ionmdyvssqqtutmqsunr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlvbm1keXZzc3FxdHV0bXFzdW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5OTAyODgsImV4cCI6MjEwNzU2NjI4OH0.8N1UNStHF9_vwK5X7WBP1pPEfwioB4EYCoY2NnIsmuI';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        storage: window.sessionStorage,
+        persistSession: true,
+        autoRefreshToken: true
+      }
+    });
 
     const config = {
       egitim: {
@@ -227,8 +233,6 @@
 
     let currentUser = null;
 
-    // Siber Güvenlik (XSS - Cross Site Scripting) Filtresi
-    // Veritabanından gelen metinleri ekrana basmadan önce zararlı HTML/JS sembollerini temizler.
     function escapeHTML(str) {
       if (!str) return "";
       return str.toString()
@@ -305,28 +309,53 @@
       const btn = document.getElementById('loginBtn');
       if(!name || !no) return;
 
-      btn.disabled = true; btn.innerText = "Bağlanıyor...";
-      
-      const { data, error } = await supabaseClient.from('users').select('*').eq('no', no).single();
-      
-      if(error || !data) {
-        showToast("Numara sistemde bulunamadı.", "error");
+      btn.disabled = true; btn.innerText = "Giriş Yapılıyor...";
+
+      const dummyEmail = `${no}@ituokculuk.internal`;
+      const password = no;
+
+      const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+        email: dummyEmail,
+        password: password
+      });
+
+      if (authError) {
+        showToast("Giriş başarısız. Numara veya isim hatalı.", "error");
         btn.disabled = false; btn.innerText = "Giriş Yap";
         return;
       }
 
-      const dbNameLower = data.name_lower || "";
-      const dbNickLower = data.nickname ? data.nickname.toLocaleLowerCase('tr-TR') : dbNameLower;
+      const { data: userData, error: userError } = await supabaseClient
+        .from('users')
+        .select('*')
+        .eq('no', no)
+        .single();
+    
+      if (userError || !userData) {
+        showToast("Kullanıcı profili bulunamadı.", "error");
+        btn.disabled = false; btn.innerText = "Giriş Yap";
+        return;
+      }
 
-      if(name !== dbNameLower && name !== dbNickLower) {
+      const dbNameLower = userData.name_lower || "";
+      const dbNickLower = userData.nickname ? userData.nickname.toLocaleLowerCase('tr-TR') : dbNameLower;
+
+      if (name !== dbNameLower && name !== dbNickLower) {
         showToast("İsim veya Nickname hatalı.", "error");
         btn.disabled = false; btn.innerText = "Giriş Yap";
         return;
       }
 
-      currentUser = data;
+      currentUser = userData;
       document.getElementById('loginPanel').style.display = 'none';
-      
+
+      if(currentUser.role === 'admin') {
+        document.getElementById('adminPanel').style.display = 'block';
+      } else {
+        document.getElementById('userPanel').style.display = 'block';
+        initUserPanel();
+      }
+
       if(currentUser.role === 'admin') {
         document.getElementById('adminPanel').style.display = 'block';
       } else {
