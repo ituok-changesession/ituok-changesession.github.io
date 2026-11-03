@@ -16,7 +16,7 @@
       --disabled-color: #6c757d; --disabled-bg: #e9ecef; --bg-image: none;
     }
 
-    [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --primary-color: #bb86fc; --btn-text: #000;}
+    [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --primary-color: #bb86fc; --btn-text: #000; }
     [data-theme="forest"] { --bg-color: #e8f5e9; --text-color: #1b5e20; --card-bg: #ffffff; --primary-color: #2e7d32; --btn-text: #fff; }
     [data-theme="minecraft"] { --bg-color: #7cbd6b; --text-color: #ffffff; --card-bg: rgba(0, 0, 0, 0.6); --primary-color: #555555; }
     [data-theme="minecraft"] .decor-left { display: block !important; background-image: url('./iskelet.png'); }
@@ -42,7 +42,8 @@
     .btn { width: 100%; padding: 14px; margin-top: 15px; background: var(--primary-color); color: var(--btn-text); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; }
     .btn:disabled { background: var(--disabled-color); cursor: not-allowed; }
     .btn-row { display: flex; gap: 10px; margin-top: 15px; }
-
+    
+    /* Header Info Düzeltmesi (Tema Uyumu) */
     .header-info { text-align: center; margin-bottom: 20px; font-size: 15px; font-weight: bold; background: var(--disabled-bg); color: var(--text-color); padding: 15px; border-radius: 8px; }
     [data-theme="halloween"] .header-info { background: #000000; color: #ff6600; }
     [data-theme="dark"] .header-info { background: #2d2d2d; color: #bb86fc; }
@@ -212,7 +213,16 @@
   <script>
     const SUPABASE_URL = 'https://ionmdyvssqqtutmqsunr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlvbm1keXZzc3FxdHV0bXFzdW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5OTAyODgsImV4cCI6MjEwNzU2NjI4OH0.8N1UNStHF9_vwK5X7WBP1pPEfwioB4EYCoY2NnIsmuI';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // YENİ: Oturum (Session) ayarları değiştirildi. F5 atınca (sessionStorage) sıfırlanacak.
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        storage: window.sessionStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      }
+    });
 
     const config = {
       egitim: {
@@ -227,8 +237,6 @@
 
     let currentUser = null;
 
-    // Siber Güvenlik (XSS - Cross Site Scripting) Filtresi
-    // Veritabanından gelen metinleri ekrana basmadan önce zararlı HTML/JS sembollerini temizler.
     function escapeHTML(str) {
       if (!str) return "";
       return str.toString()
@@ -299,6 +307,7 @@
     }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
+    // YENİ: Auth Sistemli Giriş Mantığı
     async function appLogin() {
       const name = document.getElementById('loginName').value.trim().toLocaleLowerCase('tr-TR');
       const no = document.getElementById('loginNo').value.trim();
@@ -306,11 +315,27 @@
       if(!name || !no) return;
 
       btn.disabled = true; btn.innerText = "Bağlanıyor...";
+
+      const dummyEmail = `${no}@ituokculuk.internal`;
       
+      // 1. Supabase Auth Girişi
+      const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+        email: dummyEmail,
+        password: no
+      });
+
+      if (authError) {
+        showToast("Numara bulunamadı veya sistem hatası.", "error");
+        btn.disabled = false; btn.innerText = "Giriş Yap";
+        return;
+      }
+      
+      // 2. Kullanıcı Verisini Çekme
       const { data, error } = await supabaseClient.from('users').select('*').eq('no', no).single();
       
       if(error || !data) {
-        showToast("Numara sistemde bulunamadı.", "error");
+        showToast("Veritabanı kaydı bulunamadı.", "error");
+        await supabaseClient.auth.signOut(); // Veri yoksa oturumu iptal et
         btn.disabled = false; btn.innerText = "Giriş Yap";
         return;
       }
@@ -318,8 +343,10 @@
       const dbNameLower = data.name_lower || "";
       const dbNickLower = data.nickname ? data.nickname.toLocaleLowerCase('tr-TR') : dbNameLower;
 
+      // 3. İsim Doğrulaması
       if(name !== dbNameLower && name !== dbNickLower) {
         showToast("İsim veya Nickname hatalı.", "error");
+        await supabaseClient.auth.signOut(); // Yanlış isim yazdıysa token'ı sil
         btn.disabled = false; btn.innerText = "Giriş Yap";
         return;
       }
@@ -336,7 +363,6 @@
     }
 
     async function initUserPanel() {
-      // innerText kullanıldığı için burası doğal olarak XSS korumalıdır
       document.getElementById('uName').innerText = currentUser.nickname || currentUser.name;
       document.getElementById('uGroup').innerText = currentUser.user_group;
       document.getElementById('uSession').innerText = currentUser.current_session || "Atanmamış / İptal Edildi";
@@ -443,7 +469,6 @@
       users.forEach(u => {
         const isHere = attSet.has(u.id);
         const bText = u.bow_size ? `(${u.bow_size})` : "";
-        // XSS Koruması uygulanıyor:
         const safeName = escapeHTML(u.name);
         const safeBowText = escapeHTML(bText);
 
@@ -485,7 +510,6 @@
       users.forEach(u => {
         const uAtt = att.filter(a => a.user_id === u.id);
         const count = uAtt.length;
-        // XSS Koruması:
         const safeName = escapeHTML(u.name);
         const safeBow = escapeHTML(u.bow_size || '');
 
@@ -531,7 +555,6 @@
         daysObj[day].forEach(s => {
           const inThis = users.filter(u => u.current_session === s);
           
-          // XSS Koruması uygulanarak HTML oluşturuluyor
           let namesHtml = inThis.length ? inThis.map(u => {
             const safeName = escapeHTML(u.name);
             const safeBow = escapeHTML(u.bow_size || '-');
