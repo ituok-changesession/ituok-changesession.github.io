@@ -307,50 +307,60 @@
     }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    // YENİ: Auth Sistemli Giriş Mantığı
     async function appLogin() {
       const name = document.getElementById('loginName').value.trim().toLocaleLowerCase('tr-TR');
       const no = document.getElementById('loginNo').value.trim();
       const btn = document.getElementById('loginBtn');
       if(!name || !no) return;
-
+    
       btn.disabled = true; btn.innerText = "Bağlanıyor...";
-
+    
       const dummyEmail = `${no}@ituokculuk.internal`;
       
-      // 1. Supabase Auth Girişi
-      const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+      // 1. Önce normal giriş yapmayı dene
+      let { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
         email: dummyEmail,
         password: no
       });
-
+    
+      // 2. EĞER GİRİŞ BAŞARISIZ OLURSA (Hesap henüz Auth sisteminde yoksa)
       if (authError) {
-        showToast("Numara bulunamadı veya sistem hatası.", "error");
-        btn.disabled = false; btn.innerText = "Giriş Yap";
-        return;
+        // Arka planda sessizce hesabı oluştur (Sign Up) ve içeri al
+        const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
+          email: dummyEmail,
+          password: no
+        });
+        
+        // Eğer kayıt da başarısız olursa gerçek bir hata vardır
+        if (signUpError) {
+          showToast("Giriş Hatası: " + signUpError.message, "error");
+          btn.disabled = false; btn.innerText = "Giriş Yap";
+          return;
+        }
       }
       
-      // 2. Kullanıcı Verisini Çekme
+      // 3. Kullanıcı gerçekten bizim kulüp tablomuzda var mı kontrol et
       const { data, error } = await supabaseClient.from('users').select('*').eq('no', no).single();
       
       if(error || !data) {
         showToast("Veritabanı kaydı bulunamadı.", "error");
-        await supabaseClient.auth.signOut(); // Veri yoksa oturumu iptal et
+        await supabaseClient.auth.signOut(); // Yabancı biriyse oturumunu iptal et
         btn.disabled = false; btn.innerText = "Giriş Yap";
         return;
       }
-
+    
       const dbNameLower = data.name_lower || "";
       const dbNickLower = data.nickname ? data.nickname.toLocaleLowerCase('tr-TR') : dbNameLower;
-
-      // 3. İsim Doğrulaması
+    
+      // 4. İsim Doğrulaması
       if(name !== dbNameLower && name !== dbNickLower) {
         showToast("İsim veya Nickname hatalı.", "error");
-        await supabaseClient.auth.signOut(); // Yanlış isim yazdıysa token'ı sil
+        await supabaseClient.auth.signOut(); // İsim yanlışsa oturumu iptal et
         btn.disabled = false; btn.innerText = "Giriş Yap";
         return;
       }
-
+    
+      // Her şey doğruysa panele al
       currentUser = data;
       document.getElementById('loginPanel').style.display = 'none';
       
