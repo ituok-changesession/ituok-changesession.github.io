@@ -18,7 +18,6 @@
     [data-theme="minecraft"] { --bg-color: #7cbd6b; --text-color: #ffffff; --card-bg: rgba(0, 0, 0, 0.6); --primary-color: #555555; }
     [data-theme="minecraft"] .decor-left { display: block !important; background-image: url('./iskelet.png'); }
     [data-theme="minecraft"] .decor-right { display: block !important; background-image: url('./ari.png'); }
-    /* Halloween Primary Color güncellendi: #232323 */
     [data-theme="halloween"] { --bg-color: #1a0b2e; --text-color: #f5f5f5; --card-bg: #ff6600; --primary-color: #232323; --success-color: #440066; }
     [data-theme="halloween"] .decor-left { display: block !important; background-image: url('./hayalet.png'); }
     [data-theme="halloween"] .decor-right { display: block !important; background-image: url('./yarasa.png'); }
@@ -71,14 +70,22 @@
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: center; min-width: 600px; }
     th, td { border: 1px solid var(--disabled-color); padding: 8px; }
     th { background: var(--primary-color); color: var(--btn-text); }
-    /* Att-box içeriğini hizalamak için flex yapıldı */
-    .att-box { width: 22px; height: 22px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px; }
+    .att-box { width: 22px; height: 22px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px; margin: 0 auto; }
     .att-yes { background-color: var(--success-color); }
     .att-no { background-color: var(--danger-color); }
     .bow-input { width: 60px; padding: 4px; text-align: center; font-size: 12px; margin: 0; }
 
     .imp-btn { width: 32px; height: 32px; padding: 5px; background: var(--disabled-bg); border: 1px solid var(--disabled-color); border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
     .imp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Alert CSS (Süre kısmı dinamikleşti) */
+    .top-alerts-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 1000; width: 90%; max-width: 800px; justify-content: center; pointer-events: none; }
+    .top-alert { background: var(--card-bg); color: var(--text-color); padding: 15px 15px 25px 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border: 2px solid var(--primary-color); position: relative; overflow: hidden; pointer-events: auto; min-width: 250px; text-align: center; animation: slideDown 0.3s ease-out; }
+    .top-alert .alert-text { font-size: 14px; margin-bottom: 12px; font-weight: bold; }
+    .top-alert .alert-btn { background: var(--primary-color); color: var(--btn-text); border: none; padding: 6px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; }
+    .top-alert .progress-bar { position: absolute; bottom: 0; right: 0; height: 4px; background: var(--danger-color); width: 100%; }
+    @keyframes shrinkBar { from { width: 100%; } to { width: 0%; } }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; padding: 15px; box-sizing: border-box; }
     .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
@@ -87,6 +94,7 @@
     .toast { background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; text-align: center; opacity: 0; animation: slideUp 0.3s forwards, fadeOut 0.3s 2.5s forwards; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .toast.success { background: var(--success-color); }
     .toast.error { background: var(--danger-color); }
+    .toast.info { background: #007bff; }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
 
@@ -112,6 +120,7 @@
       th, td { padding: 5px; font-size: 12px; }
       .att-box { width: 16px; height: 16px; font-size: 11px; }
       .bow-input { width: 45px; font-size: 11px; }
+      .top-alerts-container { flex-direction: column; gap: 10px; }
     }
   </style>
 </head>
@@ -120,6 +129,7 @@
   <div class="decor-left"></div>
   <div class="decor-right"></div>
   <div id="toast-container"></div>
+  <div id="top-alerts-container" class="top-alerts-container"></div>
 
   <div id="loginPanel" class="panel">
     <h2>İTÜ Okçuluk<br><span style="font-size: 18px; font-weight: normal;">Seans ve Yoklama Sistemi</span></h2>
@@ -146,6 +156,11 @@
     <div id="userGrid"></div>
     
     <button id="cancelSessionBtn" class="action-btn" style="background: var(--danger-color); color: white; margin-top: 20px; display: none;" onclick="changeUserSession(null)">❌ Bu Hafta Gelmeyeceğim (Seansı İptal Et)</button>
+
+    <!-- Eğitim Grubu Özel Bilgi Paneli -->
+    <div id="egitimPanelInfo" style="display:none; background-color:#ffb703; color:#000; padding:15px; border-radius:8px; margin-top:20px; font-weight:bold; font-size:14px; text-align:center; border: 2px solid #fb8500; line-height: 1.4;">
+      <span id="egitimPanelInfoText"></span>
+    </div>
   </div>
 
   <div id="adminPanel" class="panel">
@@ -231,7 +246,8 @@
     };
 
     let currentUser = null;
-    let userImpressions = {}; // Yoklama için like/dislike durumu
+    let siteSettings = {}; 
+    let userImpressions = {}; 
     let currentYoklamaType = 'Eğitim';
     let currentYoklamaSort = 'alfabetik';
 
@@ -240,7 +256,6 @@
       return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // Seans kısaltma fonksiyonu (Örn: "Pazartesi 16.00-17.00" -> "pzt16")
     function shortSess(s) {
       if(!s) return "";
       const parts = s.split(' ');
@@ -278,6 +293,23 @@
       setTimeout(() => t.remove(), 2800);
     }
 
+    // Dinamik Süreli Bildirim Fonksiyonu
+    function showTopAlert(text, title="", durationSec=5) {
+      if(!text) return;
+      const dur = durationSec || 5; // Veri yoksa varsayılan 5 sn
+      const c = document.getElementById('top-alerts-container');
+      const el = document.createElement('div');
+      el.className = 'top-alert';
+      el.innerHTML = `
+        ${title ? `<div style="font-size:12px; color:var(--disabled-color); margin-bottom:5px;">${title}</div>` : ''}
+        <div class="alert-text">${escapeHTML(text)}</div>
+        <button class="alert-btn" onclick="this.parentElement.remove()">Tamam</button>
+        <div class="progress-bar" style="animation: shrinkBar ${dur}s linear forwards;"></div>
+      `;
+      c.appendChild(el);
+      setTimeout(() => { if(el.parentElement) el.remove(); }, dur * 1000);
+    }
+
     function generateBowOpts(lenId, lbsId) {
       const lenEl = document.getElementById(lenId);
       const lbsEl = document.getElementById(lbsId);
@@ -304,10 +336,7 @@
     }
     toggleNuSession();
 
-    function openModal(id) { 
-      document.getElementById(id).style.display = 'flex'; 
-      if(id === 'modalYoklamaAl') fillYaSessions();
-    }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'modalYoklamaAl') fillYaSessions(); }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     async function appLogin() {
@@ -347,6 +376,18 @@
       }
 
       currentUser = data;
+      
+      const { data: setD } = await supabaseClient.from('settings').select('*').single();
+      if(setD) siteSettings = setD;
+
+      if(currentUser.role === 'admin') {
+        if(siteSettings.egitim_alert) showTopAlert(siteSettings.egitim_alert, "EĞİTİM BİLDİRİMİ", siteSettings.egitim_alert_time);
+        if(siteSettings.antrenman_alert) showTopAlert(siteSettings.antrenman_alert, "ANTRENMAN BİLDİRİMİ", siteSettings.antrenman_alert_time);
+      } else {
+        if(currentUser.user_group === 'Eğitim' && siteSettings.egitim_alert) showTopAlert(siteSettings.egitim_alert, "", siteSettings.egitim_alert_time);
+        if(currentUser.user_group === 'Antrenman' && siteSettings.antrenman_alert) showTopAlert(siteSettings.antrenman_alert, "", siteSettings.antrenman_alert_time);
+      }
+
       document.getElementById('loginPanel').style.display = 'none';
       if(currentUser.role === 'admin') document.getElementById('adminPanel').style.display = 'block';
       else { document.getElementById('userPanel').style.display = 'block'; initUserPanel(); }
@@ -356,11 +397,21 @@
       document.getElementById('uName').innerText = currentUser.nickname || currentUser.name;
       document.getElementById('uGroup').innerText = currentUser.user_group;
       document.getElementById('uSession').innerText = currentUser.current_session || "Atanmamış / İptal Edildi";
+      
       if(currentUser.bow_size) {
         const parts = currentUser.bow_size.split('/');
         document.getElementById('uBowLen').value = parts[0] || "";
         document.getElementById('uBowLbs').value = parts[1] || "";
       }
+      
+      const epInfo = document.getElementById('egitimPanelInfo');
+      if(currentUser.user_group === 'Eğitim' && siteSettings.egitim_panel) {
+        epInfo.style.display = 'block';
+        document.getElementById('egitimPanelInfoText').innerText = siteSettings.egitim_panel;
+      } else {
+        epInfo.style.display = 'none';
+      }
+
       loadUserSessions();
     }
 
@@ -423,7 +474,6 @@
       loadUserSessions();
     }
 
-    // Like / Dislike Görünüm Geçişi
     function toggleImp(btn, uid, type) {
       const otherType = type === 'like' ? 'dislike' : 'like';
       const otherBtn = document.getElementById(otherType + '_' + uid);
@@ -443,22 +493,25 @@
       const g = document.getElementById('yaGroup').value;
       const s = document.getElementById('yaSession').value;
       closeModal('modalYoklamaAl');
-      userImpressions = {}; // Listeyi temizle
+      userImpressions = {}; 
       
       const area = document.getElementById('adminContentArea');
       area.innerHTML = `<h3>Yoklama: ${w}. Hafta | ${s}</h3><div id="yoklamaList" style="display:flex; flex-direction:column; gap:10px;">Yükleniyor...</div>`;
       
       const { data: users } = await supabaseClient.from('users').select('id, name, bow_size').eq('current_session', s).order('name');
-      const { data: att } = await supabaseClient.from('attendance').select('user_id').eq('week', w).eq('session_name', s);
+      const { data: att } = await supabaseClient.from('attendance').select('user_id, impression').eq('week', w).eq('session_name', s);
       
-      const attSet = new Set(att.map(a => a.user_id));
+      const attMap = {};
+      att.forEach(a => { attMap[a.user_id] = a.impression || null; });
+      
       const listEl = document.getElementById('yoklamaList');
       listEl.innerHTML = '';
       
       if(users.length === 0) { listEl.innerHTML = "<div style='text-align:center;'>Bu seansta kayıtlı üye yok.</div>"; return; }
 
       users.forEach(u => {
-        const isHere = attSet.has(u.id);
+        const isHere = attMap.hasOwnProperty(u.id);
+        const savedImp = attMap[u.id];
         const bText = u.bow_size ? `(${u.bow_size})` : "";
         const safeName = escapeHTML(u.name);
         const safeBowText = escapeHTML(bText);
@@ -467,10 +520,10 @@
           <div style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--disabled-bg); align-items:center;">
             <span style="font-size:14px; margin-right:5px;"><b>${safeName}</b> <span style="font-size:12px;color:var(--disabled-color);">${safeBowText}</span></span>
             <div style="display:flex; gap:6px; align-items:center;">
-              <button id="like_${u.id}" class="imp-btn" onclick="toggleImp(this, '${u.id}', 'like')" ${isHere ? 'disabled' : ''}>👍</button>
-              <button id="dislike_${u.id}" class="imp-btn" onclick="toggleImp(this, '${u.id}', 'dislike')" ${isHere ? 'disabled' : ''}>👎</button>
-              <button class="action-btn ${isHere ? 'btn-full' : 'btn-available'}" style="width:75px; padding:8px 5px;" onclick="markHere('${u.id}', ${w}, '${s}', this)" ${isHere ? 'disabled' : ''}>
-                ${isHere ? 'Eklendi' : 'Burada'}
+              <button id="like_${u.id}" class="imp-btn" style="${isHere && savedImp==='like' ? 'background:var(--success-color);' : ''}" onclick="toggleImp(this, '${u.id}', 'like')" ${isHere ? 'disabled' : ''}>👍</button>
+              <button id="dislike_${u.id}" class="imp-btn" style="${isHere && savedImp==='dislike' ? 'background:var(--danger-color);' : ''}" onclick="toggleImp(this, '${u.id}', 'dislike')" ${isHere ? 'disabled' : ''}>👎</button>
+              <button class="action-btn ${isHere ? 'btn-current' : 'btn-available'}" style="width:85px; padding:8px 5px;" data-ishere="${isHere}" onclick="toggleAttendance('${u.id}', ${w}, '${s}', this)">
+                ${isHere ? 'Geri Al' : 'Burada'}
               </button>
             </div>
           </div>
@@ -478,21 +531,48 @@
       });
     }
 
-    async function markHere(uid, w, s, btn) {
-      btn.disabled = true; btn.innerText = "...";
-      const imp = userImpressions[uid] || null;
-      const { error } = await supabaseClient.from('attendance').insert([{ user_id: uid, week: w, session_name: s, impression: imp }]);
-      if(error) { btn.disabled = false; btn.innerText = "Burada"; showToast("Hata!", "error"); }
-      else { 
-        btn.className = "action-btn btn-full"; btn.innerText = "Eklendi";
-        document.getElementById('like_' + uid).disabled = true;
-        document.getElementById('dislike_' + uid).disabled = true;
-        showToast("Eklendi!"); 
+    async function toggleAttendance(uid, w, s, btn) {
+      btn.disabled = true;
+      const isHere = btn.getAttribute('data-ishere') === 'true';
+
+      if (isHere) {
+        const { error } = await supabaseClient.from('attendance').delete().eq('user_id', uid).eq('week', w).eq('session_name', s);
+        if (error) { showToast("Hata!", "error"); btn.disabled = false; }
+        else {
+          btn.setAttribute('data-ishere', 'false');
+          btn.className = "action-btn btn-available";
+          btn.innerText = "Burada";
+          
+          document.getElementById('like_' + uid).disabled = false;
+          document.getElementById('dislike_' + uid).disabled = false;
+          
+          userImpressions[uid] = null;
+          document.getElementById('like_' + uid).style.background = 'var(--disabled-bg)';
+          document.getElementById('dislike_' + uid).style.background = 'var(--disabled-bg)';
+          
+          showToast("Yoklama geri alındı.", "info");
+          btn.disabled = false;
+        }
+      } else {
+        const imp = userImpressions[uid] || null;
+        const { error } = await supabaseClient.from('attendance').insert([{ user_id: uid, week: w, session_name: s, impression: imp }]);
+        if (error) { showToast("Hata!", "error"); btn.disabled = false; }
+        else { 
+          btn.setAttribute('data-ishere', 'true');
+          btn.className = "action-btn btn-current";
+          btn.innerText = "Geri Al";
+          
+          document.getElementById('like_' + uid).disabled = true;
+          document.getElementById('dislike_' + uid).disabled = true;
+          
+          showToast("Eklendi!"); 
+          btn.disabled = false;
+        }
       }
     }
 
     async function loadAdminYoklamaTablosu(type = currentYoklamaType, sortOverride = null) {
-      if (type !== currentYoklamaType) currentYoklamaSort = 'alfabetik'; // Grup değişince sıfırla
+      if (type !== currentYoklamaType) currentYoklamaSort = 'alfabetik';
       currentYoklamaType = type;
       if (sortOverride) currentYoklamaSort = sortOverride;
 
@@ -513,7 +593,6 @@
       const { data: users } = await supabaseClient.from('users').select('id, name, bow_size, default_session').eq('user_group', type);
       const { data: att } = await supabaseClient.from('attendance').select('user_id, week, impression');
       
-      // Sıralama Mantığı
       users.sort((a, b) => {
          if (currentYoklamaSort === 'yoklama') {
             const aCount = att.filter(x => x.user_id === a.id).length;
@@ -526,14 +605,28 @@
             const bIdx = sList.indexOf(b.default_session);
             return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx) || a.name.localeCompare(b.name, 'tr-TR');
          }
-         return a.name.localeCompare(b.name, 'tr-TR'); // Varsayılan Alfabetik
+         return a.name.localeCompare(b.name, 'tr-TR');
       });
 
-      let html = `<table><tr><th>Yay</th><th style="text-align:left;">İsim Soyisim</th>`;
+      let html = `<table><tr><th style="width:30px;">#</th><th>Yay</th><th style="text-align:left;">İsim Soyisim</th>`;
       for(let i=1; i<=10; i++) html += `<th>H${i}</th>`;
       html += `<th>Oran</th></tr>`;
 
+      let counter = 0;
+      let currentSessGroup = "";
+
       users.forEach(u => {
+        if (currentYoklamaSort === 'seans' && type === 'Eğitim') {
+          if (u.default_session !== currentSessGroup) {
+            counter = 1;
+            currentSessGroup = u.default_session;
+          } else {
+            counter++;
+          }
+        } else {
+          counter++;
+        }
+
         const uAtt = att.filter(a => a.user_id === u.id);
         const count = uAtt.length;
         const safeName = escapeHTML(u.name);
@@ -541,6 +634,7 @@
         const defText = (type === 'Eğitim' && u.default_session) ? ` <span style="font-size:11px; color:var(--disabled-color);">(${shortSess(u.default_session)})</span>` : '';
 
         html += `<tr>
+          <td style="color:var(--disabled-color); font-size:12px;"><b>${counter}</b></td>
           <td><input type="text" class="bow-input" value="${safeBow}" onchange="adminUpdateBow('${u.id}', this.value)"></td>
           <td style="text-align:left; white-space:nowrap;">${safeName}${defText}</td>`;
         for(let i=1; i<=10; i++) {
