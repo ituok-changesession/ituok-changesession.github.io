@@ -3,9 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="İTÜ Okçuluk Kulübü üyeleri için haftalık eğitim ve antrenman seans seçimi, yay ölçüsü belirleme ve yoklama sistemi.">
-  <meta name="keywords" content="itü okçuluk, itü ok, okçuluk kulübü, itü ok seans, itü okçuluk seans, seans seçimi, yoklama, itü, okçuluk">
-  <meta name="author" content="İTÜ Okçuluk Kulübü">
   <title>İTÜ Okçuluk Kulübü - Seans ve Yoklama Sistemi</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -21,6 +18,7 @@
     [data-theme="minecraft"] { --bg-color: #7cbd6b; --text-color: #ffffff; --card-bg: rgba(0, 0, 0, 0.6); --primary-color: #555555; }
     [data-theme="minecraft"] .decor-left { display: block !important; background-image: url('./iskelet.png'); }
     [data-theme="minecraft"] .decor-right { display: block !important; background-image: url('./ari.png'); }
+    /* Halloween Primary Color güncellendi: #232323 */
     [data-theme="halloween"] { --bg-color: #1a0b2e; --text-color: #f5f5f5; --card-bg: #ff6600; --primary-color: #232323; --success-color: #440066; }
     [data-theme="halloween"] .decor-left { display: block !important; background-image: url('./hayalet.png'); }
     [data-theme="halloween"] .decor-right { display: block !important; background-image: url('./yarasa.png'); }
@@ -43,7 +41,6 @@
     .btn:disabled { background: var(--disabled-color); cursor: not-allowed; }
     .btn-row { display: flex; gap: 10px; margin-top: 15px; }
     
-    /* Header Info Düzeltmesi (Tema Uyumu) */
     .header-info { text-align: center; margin-bottom: 20px; font-size: 15px; font-weight: bold; background: var(--disabled-bg); color: var(--text-color); padding: 15px; border-radius: 8px; }
     [data-theme="halloween"] .header-info { background: #000000; color: #ff6600; }
     [data-theme="dark"] .header-info { background: #2d2d2d; color: #bb86fc; }
@@ -74,10 +71,14 @@
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: center; min-width: 600px; }
     th, td { border: 1px solid var(--disabled-color); padding: 8px; }
     th { background: var(--primary-color); color: var(--btn-text); }
-    .att-box { width: 22px; height: 22px; border-radius: 4px; display: inline-block; }
+    /* Att-box içeriğini hizalamak için flex yapıldı */
+    .att-box { width: 22px; height: 22px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px; }
     .att-yes { background-color: var(--success-color); }
     .att-no { background-color: var(--danger-color); }
     .bow-input { width: 60px; padding: 4px; text-align: center; font-size: 12px; margin: 0; }
+
+    .imp-btn { width: 32px; height: 32px; padding: 5px; background: var(--disabled-bg); border: 1px solid var(--disabled-color); border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+    .imp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; padding: 15px; box-sizing: border-box; }
     .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
@@ -109,7 +110,7 @@
       .admin-btn { min-height: 50px; font-size: 13px; padding: 10px; }
       .days-wrapper { grid-template-columns: 1fr; gap: 15px; }
       th, td { padding: 5px; font-size: 12px; }
-      .att-box { width: 16px; height: 16px; }
+      .att-box { width: 16px; height: 16px; font-size: 11px; }
       .bow-input { width: 45px; font-size: 11px; }
     }
   </style>
@@ -214,14 +215,8 @@
     const SUPABASE_URL = 'https://ionmdyvssqqtutmqsunr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlvbm1keXZzc3FxdHV0bXFzdW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5OTAyODgsImV4cCI6MjEwNzU2NjI4OH0.8N1UNStHF9_vwK5X7WBP1pPEfwioB4EYCoY2NnIsmuI';
     
-    // YENİ: Oturum (Session) ayarları değiştirildi. F5 atınca (sessionStorage) sıfırlanacak.
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: {
-        storage: window.sessionStorage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false
-      }
+      auth: { persistSession: false }
     });
 
     const config = {
@@ -236,15 +231,27 @@
     };
 
     let currentUser = null;
+    let userImpressions = {}; // Yoklama için like/dislike durumu
+    let currentYoklamaType = 'Eğitim';
+    let currentYoklamaSort = 'alfabetik';
 
     function escapeHTML(str) {
       if (!str) return "";
-      return str.toString()
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+      return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // Seans kısaltma fonksiyonu (Örn: "Pazartesi 16.00-17.00" -> "pzt16")
+    function shortSess(s) {
+      if(!s) return "";
+      const parts = s.split(' ');
+      const d = parts[0].toLowerCase();
+      const t = parts[1].split('.')[0];
+      let shortD = d;
+      if(d === 'pazartesi') shortD = 'pzt';
+      else if(d === 'çarşamba') shortD = 'çrş';
+      else if(d === 'cuma') shortD = 'cum';
+      else if(d === 'cumartesi') shortD = 'cmt';
+      return shortD + t;
     }
 
     function setTheme(themeName) {
@@ -259,9 +266,7 @@
     if(savedTheme) setTheme(savedTheme);
     window.addEventListener('resize', () => {
       const currentTheme = localStorage.getItem('theme');
-      if(window.innerWidth <= 768 && (currentTheme === 'minecraft' || currentTheme === 'halloween' || currentTheme === 'medieval')) {
-         setTheme('default');
-      }
+      if(window.innerWidth <= 768 && (currentTheme === 'minecraft' || currentTheme === 'halloween' || currentTheme === 'medieval')) setTheme('default');
     });
 
     function showToast(msg, type = 'success') {
@@ -295,9 +300,7 @@
       const g = document.getElementById('nuGroup').value;
       const sEl = document.getElementById('nuSession');
       sEl.innerHTML = '<option value="">Atanmamış</option>';
-      if(g === 'Eğitim') {
-        config.egitim.sessions.forEach(s => sEl.innerHTML += `<option value="${s}">${s}</option>`);
-      }
+      if(g === 'Eğitim') config.egitim.sessions.forEach(s => sEl.innerHTML += `<option value="${s}">${s}</option>`);
     }
     toggleNuSession();
 
@@ -312,26 +315,13 @@
       const no = document.getElementById('loginNo').value.trim();
       const btn = document.getElementById('loginBtn');
       if(!name || !no) return;
-    
+
       btn.disabled = true; btn.innerText = "Bağlanıyor...";
-    
       const dummyEmail = `${no}@ituokculuk.internal`;
       
-      // 1. Önce normal giriş yapmayı dene
-      let { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-        email: dummyEmail,
-        password: no
-      });
-    
-      // 2. EĞER GİRİŞ BAŞARISIZ OLURSA (Hesap henüz Auth sisteminde yoksa)
+      let { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({ email: dummyEmail, password: no });
       if (authError) {
-        // Arka planda sessizce hesabı oluştur (Sign Up) ve içeri al
-        const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
-          email: dummyEmail,
-          password: no
-        });
-        
-        // Eğer kayıt da başarısız olursa gerçek bir hata vardır
+        const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({ email: dummyEmail, password: no });
         if (signUpError) {
           showToast("Giriş Hatası: " + signUpError.message, "error");
           btn.disabled = false; btn.innerText = "Giriş Yap";
@@ -339,44 +329,33 @@
         }
       }
       
-      // 3. Kullanıcı gerçekten bizim kulüp tablomuzda var mı kontrol et
       const { data, error } = await supabaseClient.from('users').select('*').eq('no', no).single();
-      
       if(error || !data) {
         showToast("Veritabanı kaydı bulunamadı.", "error");
-        await supabaseClient.auth.signOut(); // Yabancı biriyse oturumunu iptal et
+        await supabaseClient.auth.signOut();
         btn.disabled = false; btn.innerText = "Giriş Yap";
         return;
       }
-    
+
       const dbNameLower = data.name_lower || "";
       const dbNickLower = data.nickname ? data.nickname.toLocaleLowerCase('tr-TR') : dbNameLower;
-    
-      // 4. İsim Doğrulaması
       if(name !== dbNameLower && name !== dbNickLower) {
         showToast("İsim veya Nickname hatalı.", "error");
-        await supabaseClient.auth.signOut(); // İsim yanlışsa oturumu iptal et
+        await supabaseClient.auth.signOut();
         btn.disabled = false; btn.innerText = "Giriş Yap";
         return;
       }
-    
-      // Her şey doğruysa panele al
+
       currentUser = data;
       document.getElementById('loginPanel').style.display = 'none';
-      
-      if(currentUser.role === 'admin') {
-        document.getElementById('adminPanel').style.display = 'block';
-      } else {
-        document.getElementById('userPanel').style.display = 'block';
-        initUserPanel();
-      }
+      if(currentUser.role === 'admin') document.getElementById('adminPanel').style.display = 'block';
+      else { document.getElementById('userPanel').style.display = 'block'; initUserPanel(); }
     }
 
     async function initUserPanel() {
       document.getElementById('uName').innerText = currentUser.nickname || currentUser.name;
       document.getElementById('uGroup').innerText = currentUser.user_group;
       document.getElementById('uSession').innerText = currentUser.current_session || "Atanmamış / İptal Edildi";
-      
       if(currentUser.bow_size) {
         const parts = currentUser.bow_size.split('/');
         document.getElementById('uBowLen').value = parts[0] || "";
@@ -389,7 +368,6 @@
       const l = document.getElementById('uBowLen').value;
       const b = document.getElementById('uBowLbs').value;
       const val = (l && b) ? `${l}/${b}` : "";
-      
       const { error } = await supabaseClient.from('users').update({ bow_size: val }).eq('id', currentUser.id);
       if(error) showToast("Hata!", "error");
       else { currentUser.bow_size = val; showToast("Yay ölçüsü kaydedildi."); }
@@ -407,12 +385,7 @@
 
       const grid = document.getElementById('userGrid');
       const cancelBtn = document.getElementById('cancelSessionBtn');
-      
-      if(currentUser.current_session) {
-         cancelBtn.style.display = 'block';
-      } else {
-         cancelBtn.style.display = 'none';
-      }
+      cancelBtn.style.display = currentUser.current_session ? 'block' : 'none';
       
       const daysObj = {};
       list.forEach(s => {
@@ -429,19 +402,11 @@
           const avail = cap - count;
           const isCur = currentUser.current_session === s;
           const isFull = avail <= 0;
-          
           let btnH = `<button class="action-btn btn-available" onclick="changeUserSession('${s}')">Geçiş Yap</button>`;
           if(isCur) btnH = `<button class="action-btn btn-current" disabled>Mevcut Seans</button>`;
           else if(isFull) btnH = `<button class="action-btn btn-full" disabled>Dolu</button>`;
-
           const timeOnly = s.substring(s.indexOf(' ') + 1);
-          html += `
-            <div class="session-card">
-              <div class="session-time">${timeOnly}</div>
-              <div class="session-stats">Dolu: ${count}/${cap} | Boş: ${avail}</div>
-              ${btnH}
-            </div>
-          `;
+          html += `<div class="session-card"><div class="session-time">${timeOnly}</div><div class="session-stats">Dolu: ${count}/${cap} | Boş: ${avail}</div>${btnH}</div>`;
         });
         html += `</div>`;
       }
@@ -458,11 +423,27 @@
       loadUserSessions();
     }
 
+    // Like / Dislike Görünüm Geçişi
+    function toggleImp(btn, uid, type) {
+      const otherType = type === 'like' ? 'dislike' : 'like';
+      const otherBtn = document.getElementById(otherType + '_' + uid);
+      
+      if (userImpressions[uid] === type) {
+         userImpressions[uid] = null;
+         btn.style.background = 'var(--disabled-bg)';
+      } else {
+         userImpressions[uid] = type;
+         btn.style.background = type === 'like' ? 'var(--success-color)' : 'var(--danger-color)';
+         otherBtn.style.background = 'var(--disabled-bg)';
+      }
+    }
+
     async function startYoklama() {
       const w = document.getElementById('yaWeek').value;
       const g = document.getElementById('yaGroup').value;
       const s = document.getElementById('yaSession').value;
       closeModal('modalYoklamaAl');
+      userImpressions = {}; // Listeyi temizle
       
       const area = document.getElementById('adminContentArea');
       area.innerHTML = `<h3>Yoklama: ${w}. Hafta | ${s}</h3><div id="yoklamaList" style="display:flex; flex-direction:column; gap:10px;">Yükleniyor...</div>`;
@@ -484,10 +465,14 @@
 
         listEl.innerHTML += `
           <div style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--disabled-bg); align-items:center;">
-            <span style="font-size:14px;"><b>${safeName}</b> <span style="font-size:12px;color:var(--disabled-color);">${safeBowText}</span></span>
-            <button class="action-btn ${isHere ? 'btn-full' : 'btn-available'}" style="width:90px; padding:8px 5px;" onclick="markHere('${u.id}', ${w}, '${s}', this)" ${isHere ? 'disabled' : ''}>
-              ${isHere ? 'Eklendi' : 'Burada'}
-            </button>
+            <span style="font-size:14px; margin-right:5px;"><b>${safeName}</b> <span style="font-size:12px;color:var(--disabled-color);">${safeBowText}</span></span>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button id="like_${u.id}" class="imp-btn" onclick="toggleImp(this, '${u.id}', 'like')" ${isHere ? 'disabled' : ''}>👍</button>
+              <button id="dislike_${u.id}" class="imp-btn" onclick="toggleImp(this, '${u.id}', 'dislike')" ${isHere ? 'disabled' : ''}>👎</button>
+              <button class="action-btn ${isHere ? 'btn-full' : 'btn-available'}" style="width:75px; padding:8px 5px;" onclick="markHere('${u.id}', ${w}, '${s}', this)" ${isHere ? 'disabled' : ''}>
+                ${isHere ? 'Eklendi' : 'Burada'}
+              </button>
+            </div>
           </div>
         `;
       });
@@ -495,24 +480,55 @@
 
     async function markHere(uid, w, s, btn) {
       btn.disabled = true; btn.innerText = "...";
-      const { error } = await supabaseClient.from('attendance').insert([{ user_id: uid, week: w, session_name: s }]);
+      const imp = userImpressions[uid] || null;
+      const { error } = await supabaseClient.from('attendance').insert([{ user_id: uid, week: w, session_name: s, impression: imp }]);
       if(error) { btn.disabled = false; btn.innerText = "Burada"; showToast("Hata!", "error"); }
-      else { btn.className = "action-btn btn-full"; btn.innerText = "Eklendi"; showToast("Eklendi!"); }
+      else { 
+        btn.className = "action-btn btn-full"; btn.innerText = "Eklendi";
+        document.getElementById('like_' + uid).disabled = true;
+        document.getElementById('dislike_' + uid).disabled = true;
+        showToast("Eklendi!"); 
+      }
     }
 
-    async function loadAdminYoklamaTablosu(type = 'Eğitim') {
+    async function loadAdminYoklamaTablosu(type = currentYoklamaType, sortOverride = null) {
+      if (type !== currentYoklamaType) currentYoklamaSort = 'alfabetik'; // Grup değişince sıfırla
+      currentYoklamaType = type;
+      if (sortOverride) currentYoklamaSort = sortOverride;
+
       const area = document.getElementById('adminContentArea');
       area.innerHTML = `
-        <div style="display:flex; gap:10px; margin-bottom:15px; justify-content:center;">
+        <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center; flex-wrap:wrap; justify-content:center;">
+          <select id="yoklamaSortSelect" class="bow-input" style="width:auto; height:38px; padding:4px 10px; font-size:14px; margin:0;" onchange="loadAdminYoklamaTablosu('${type}', this.value)">
+             <option value="alfabetik" ${currentYoklamaSort==='alfabetik'?'selected':''}>Sırala: Alfabetik</option>
+             <option value="yoklama" ${currentYoklamaSort==='yoklama'?'selected':''}>Sırala: Katılım</option>
+             ${type === 'Eğitim' ? `<option value="seans" ${currentYoklamaSort==='seans'?'selected':''}>Sırala: Seans</option>` : ''}
+          </select>
           <button class="action-btn" style="width:auto; padding:8px 20px; background:${type==='Eğitim'?'var(--primary-color)':'var(--disabled-color)'}; color:white;" onclick="loadAdminYoklamaTablosu('Eğitim')">Eğitim</button>
           <button class="action-btn" style="width:auto; padding:8px 20px; background:${type==='Antrenman'?'var(--primary-color)':'var(--disabled-color)'}; color:white;" onclick="loadAdminYoklamaTablosu('Antrenman')">Antrenman</button>
         </div>
         <div class="table-responsive" id="tabloIcerik">Yükleniyor...</div>
       `;
 
-      const { data: users } = await supabaseClient.from('users').select('id, name, bow_size').eq('user_group', type).order('name');
-      const { data: att } = await supabaseClient.from('attendance').select('user_id, week');
+      const { data: users } = await supabaseClient.from('users').select('id, name, bow_size, default_session').eq('user_group', type);
+      const { data: att } = await supabaseClient.from('attendance').select('user_id, week, impression');
       
+      // Sıralama Mantığı
+      users.sort((a, b) => {
+         if (currentYoklamaSort === 'yoklama') {
+            const aCount = att.filter(x => x.user_id === a.id).length;
+            const bCount = att.filter(x => x.user_id === b.id).length;
+            return bCount - aCount || a.name.localeCompare(b.name, 'tr-TR');
+         }
+         if (currentYoklamaSort === 'seans' && type === 'Eğitim') {
+            const sList = config.egitim.sessions;
+            const aIdx = sList.indexOf(a.default_session);
+            const bIdx = sList.indexOf(b.default_session);
+            return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx) || a.name.localeCompare(b.name, 'tr-TR');
+         }
+         return a.name.localeCompare(b.name, 'tr-TR'); // Varsayılan Alfabetik
+      });
+
       let html = `<table><tr><th>Yay</th><th style="text-align:left;">İsim Soyisim</th>`;
       for(let i=1; i<=10; i++) html += `<th>H${i}</th>`;
       html += `<th>Oran</th></tr>`;
@@ -522,13 +538,15 @@
         const count = uAtt.length;
         const safeName = escapeHTML(u.name);
         const safeBow = escapeHTML(u.bow_size || '');
+        const defText = (type === 'Eğitim' && u.default_session) ? ` <span style="font-size:11px; color:var(--disabled-color);">(${shortSess(u.default_session)})</span>` : '';
 
         html += `<tr>
           <td><input type="text" class="bow-input" value="${safeBow}" onchange="adminUpdateBow('${u.id}', this.value)"></td>
-          <td style="text-align:left; white-space:nowrap;">${safeName}</td>`;
+          <td style="text-align:left; white-space:nowrap;">${safeName}${defText}</td>`;
         for(let i=1; i<=10; i++) {
-          const has = uAtt.some(a => a.week == i);
-          html += `<td><div class="att-box ${has ? 'att-yes' : 'att-no'}"></div></td>`;
+          const has = uAtt.find(a => a.week == i);
+          const impText = has ? (has.impression === 'like' ? '+' : has.impression === 'dislike' ? '-' : '') : '';
+          html += `<td><div class="att-box ${has ? 'att-yes' : 'att-no'}">${impText}</div></td>`;
         }
         html += `<td><b>${count}/10</b></td></tr>`;
       });
@@ -548,8 +566,7 @@
       const list = type === 'Eğitim' ? config.egitim.sessions : config.antrenman.sessions;
       const cap = type === 'Eğitim' ? config.egitim.cap : config.antrenman.cap;
       
-      const { data: users } = await supabaseClient.from('users').select('name, current_session, bow_size').eq('user_group', type);
-      
+      const { data: users } = await supabaseClient.from('users').select('name, current_session, bow_size, default_session').eq('user_group', type);
       const grid = document.getElementById('adminGrid');
       
       const daysObj = {};
@@ -564,21 +581,16 @@
         html += `<div class="day-column"><div class="day-title">${day}</div>`;
         daysObj[day].forEach(s => {
           const inThis = users.filter(u => u.current_session === s);
-          
           let namesHtml = inThis.length ? inThis.map(u => {
             const safeName = escapeHTML(u.name);
             const safeBow = escapeHTML(u.bow_size || '-');
-            return `<div style="font-size:13px; text-align:left; border-bottom:1px solid var(--disabled-bg); padding:5px 0;">${safeName} <span style="color:var(--disabled-color);">(${safeBow})</span></div>`;
+            const defInfo = (type === 'Eğitim' && u.default_session && u.default_session !== s) ? ` <span style="font-weight:bold; color:var(--danger-color);">(${shortSess(u.default_session)})</span>` : (type === 'Eğitim' && u.default_session ? ` (${shortSess(u.default_session)})` : "");
+            
+            return `<div style="font-size:13px; text-align:left; border-bottom:1px solid var(--disabled-bg); padding:5px 0;">${safeName} <span style="color:var(--disabled-color);">(${safeBow})${defInfo}</span></div>`;
           }).join('') : '<div style="font-size:13px; padding:5px 0;">Kimse yok.</div>';
           
           const timeOnly = s.substring(s.indexOf(' ') + 1);
-          html += `
-            <div class="session-card">
-              <div class="session-time">${timeOnly}</div>
-              <div class="session-stats"><b>${inThis.length}/${cap}</b></div>
-              <div style="max-height:150px; overflow-y:auto; border:1px solid var(--disabled-color); padding:5px; border-radius:4px;">${namesHtml}</div>
-            </div>
-          `;
+          html += `<div class="session-card"><div class="session-time">${timeOnly}</div><div class="session-stats"><b>${inThis.length}/${cap}</b></div><div style="max-height:150px; overflow-y:auto; border:1px solid var(--disabled-color); padding:5px; border-radius:4px;">${namesHtml}</div></div>`;
         });
         html += `</div>`;
       }
@@ -591,18 +603,11 @@
       const no = document.getElementById('nuNo').value.trim();
       const grp = document.getElementById('nuGroup').value;
       const sess = document.getElementById('nuSession').value;
-      
       if(!name || !no) return;
       
       const obj = {
-        name: name,
-        nickname: name,
-        name_lower: name.toLocaleLowerCase('tr-TR'),
-        no: no,
-        role: 'user',
-        user_group: grp,
-        default_session: grp === 'Eğitim' ? sess : null,
-        current_session: sess || null
+        name: name, nickname: name, name_lower: name.toLocaleLowerCase('tr-TR'), no: no, role: 'user', user_group: grp,
+        default_session: grp === 'Eğitim' ? sess : null, current_session: sess || null
       };
 
       const { error } = await supabaseClient.from('users').insert([obj]);
