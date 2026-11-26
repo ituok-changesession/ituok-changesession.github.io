@@ -70,7 +70,7 @@
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: center; min-width: 600px; }
     th, td { border: 1px solid var(--disabled-color); padding: 8px; }
     th { background: var(--primary-color); color: var(--btn-text); }
-    .att-box { width: 22px; height: 22px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px; margin: 0 auto; }
+    .att-box { min-width: 26px; height: 22px; padding: 0 3px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px; margin: 0 auto; white-space: nowrap; box-sizing: border-box; }
     .att-yes { background-color: var(--success-color); }
     .att-no { background-color: var(--danger-color); }
     .bow-input { width: 60px; padding: 4px; text-align: center; font-size: 12px; margin: 0; }
@@ -78,7 +78,6 @@
     .imp-btn { width: 32px; height: 32px; padding: 5px; background: var(--disabled-bg); border: 1px solid var(--disabled-color); border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
     .imp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Alert CSS (Süre kısmı dinamikleşti) */
     .top-alerts-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 1000; width: 90%; max-width: 800px; justify-content: center; pointer-events: none; }
     .top-alert { background: var(--card-bg); color: var(--text-color); padding: 15px 15px 25px 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border: 2px solid var(--primary-color); position: relative; overflow: hidden; pointer-events: auto; min-width: 250px; text-align: center; animation: slideDown 0.3s ease-out; }
     .top-alert .alert-text { font-size: 14px; margin-bottom: 12px; font-weight: bold; }
@@ -118,7 +117,7 @@
       .admin-btn { min-height: 50px; font-size: 13px; padding: 10px; }
       .days-wrapper { grid-template-columns: 1fr; gap: 15px; }
       th, td { padding: 5px; font-size: 12px; }
-      .att-box { width: 16px; height: 16px; font-size: 11px; }
+      .att-box { min-width: 20px; height: 18px; font-size: 10px; padding: 0 2px; }
       .bow-input { width: 45px; font-size: 11px; }
       .top-alerts-container { flex-direction: column; gap: 10px; }
     }
@@ -157,7 +156,6 @@
     
     <button id="cancelSessionBtn" class="action-btn" style="background: var(--danger-color); color: white; margin-top: 20px; display: none;" onclick="changeUserSession(null)">❌ Bu Hafta Gelmeyeceğim (Seansı İptal Et)</button>
 
-    <!-- Eğitim Grubu Özel Bilgi Paneli -->
     <div id="egitimPanelInfo" style="display:none; background-color:#ffb703; color:#000; padding:15px; border-radius:8px; margin-top:20px; font-weight:bold; font-size:14px; text-align:center; border: 2px solid #fb8500; line-height: 1.4;">
       <span id="egitimPanelInfoText"></span>
     </div>
@@ -250,6 +248,7 @@
     let userImpressions = {}; 
     let currentYoklamaType = 'Eğitim';
     let currentYoklamaSort = 'alfabetik';
+    let activeYoklamaGroup = 'Eğitim';
 
     function escapeHTML(str) {
       if (!str) return "";
@@ -267,6 +266,15 @@
       else if(d === 'cuma') shortD = 'cum';
       else if(d === 'cumartesi') shortD = 'cmt';
       return shortD + t;
+    }
+
+    function isSameLocalDay(isoStr) {
+      if (!isoStr) return false;
+      const d = new Date(isoStr);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear() &&
+             d.getMonth() === now.getMonth() &&
+             d.getDate() === now.getDate();
     }
 
     function setTheme(themeName) {
@@ -293,10 +301,9 @@
       setTimeout(() => t.remove(), 2800);
     }
 
-    // Dinamik Süreli Bildirim Fonksiyonu
     function showTopAlert(text, title="", durationSec=5) {
       if(!text) return;
-      const dur = durationSec || 5; // Veri yoksa varsayılan 5 sn
+      const dur = durationSec || 5;
       const c = document.getElementById('top-alerts-container');
       const el = document.createElement('div');
       el.className = 'top-alert';
@@ -324,8 +331,12 @@
       const g = document.getElementById('yaGroup').value;
       const sEl = document.getElementById('yaSession');
       sEl.innerHTML = '';
-      const list = g === 'Eğitim' ? config.egitim.sessions : config.antrenman.sessions;
-      list.forEach(s => sEl.innerHTML += `<option value="${s}">${s}</option>`);
+      if (g === 'Antrenman') {
+        sEl.style.display = 'none';
+      } else {
+        sEl.style.display = 'block';
+        config.egitim.sessions.forEach(s => sEl.innerHTML += `<option value="${s}">${s}</option>`);
+      }
     }
 
     function toggleNuSession() {
@@ -474,56 +485,124 @@
       loadUserSessions();
     }
 
-    function toggleImp(btn, uid, type) {
+    // Anlık Like / Dislike Seçimi ve Veritabanı Güncellemesi (Burada basıldıktan sonra da çalışır)
+    async function toggleImp(btn, uid, type, w, s) {
       const otherType = type === 'like' ? 'dislike' : 'like';
       const otherBtn = document.getElementById(otherType + '_' + uid);
+      const rowEl = document.getElementById('yoklama_row_' + uid);
       
+      let newImp = null;
       if (userImpressions[uid] === type) {
+         newImp = null;
          userImpressions[uid] = null;
          btn.style.background = 'var(--disabled-bg)';
       } else {
+         newImp = type;
          userImpressions[uid] = type;
          btn.style.background = type === 'like' ? 'var(--success-color)' : 'var(--danger-color)';
          otherBtn.style.background = 'var(--disabled-bg)';
       }
+
+      // Kullanıcının bu hafta kaydı varsa (bugün veya hafta içi önceki gün) veritabanında anında güncelle
+      if (rowEl && rowEl.getAttribute('data-has-week-att') === 'true') {
+        let query = supabaseClient.from('attendance').update({ impression: newImp }).eq('user_id', uid).eq('week', w);
+        if (activeYoklamaGroup === 'Eğitim') {
+          query = query.eq('session_name', s);
+        }
+        const { error } = await query;
+        if (error) {
+          showToast("İzlenim güncellenemedi.", "error");
+        } else {
+          showToast(newImp ? "İzlenim kaydedildi." : "İzlenim kaldırıldı.", "info");
+        }
+      }
+    }
+
+    function filterYoklamaList() {
+      const input = document.getElementById('yoklamaSearchInput');
+      if (!input) return;
+      const q = input.value.trim().toLocaleLowerCase('tr-TR');
+      const rows = document.querySelectorAll('.yoklama-user-row');
+      rows.forEach(row => {
+        const searchData = row.getAttribute('data-search') || '';
+        row.style.display = searchData.includes(q) ? 'flex' : 'none';
+      });
     }
 
     async function startYoklama() {
       const w = document.getElementById('yaWeek').value;
       const g = document.getElementById('yaGroup').value;
       const s = document.getElementById('yaSession').value;
+      activeYoklamaGroup = g;
       closeModal('modalYoklamaAl');
       userImpressions = {}; 
       
       const area = document.getElementById('adminContentArea');
-      area.innerHTML = `<h3>Yoklama: ${w}. Hafta | ${s}</h3><div id="yoklamaList" style="display:flex; flex-direction:column; gap:10px;">Yükleniyor...</div>`;
+      if (g === 'Antrenman') {
+        area.innerHTML = `
+          <h3>Yoklama: ${w}. Hafta | Antrenman</h3>
+          <input type="text" id="yoklamaSearchInput" placeholder="Üye ismi yazarak filtrele..." oninput="filterYoklamaList()" style="margin-top:0; margin-bottom:12px;">
+          <div id="yoklamaList" style="display:flex; flex-direction:column; gap:10px;">Yükleniyor...</div>
+        `;
+      } else {
+        area.innerHTML = `<h3>Yoklama: ${w}. Hafta | ${s}</h3><div id="yoklamaList" style="display:flex; flex-direction:column; gap:10px;">Yükleniyor...</div>`;
+      }
       
-      const { data: users } = await supabaseClient.from('users').select('id, name, bow_size').eq('current_session', s).order('name');
-      const { data: att } = await supabaseClient.from('attendance').select('user_id, impression').eq('week', w).eq('session_name', s);
-      
-      const attMap = {};
-      att.forEach(a => { attMap[a.user_id] = a.impression || null; });
+      let usersQuery = supabaseClient.from('users').select('id, name, nickname, name_lower, bow_size');
+      if (g === 'Antrenman') {
+        usersQuery = usersQuery.eq('user_group', 'Antrenman').order('name');
+      } else {
+        usersQuery = usersQuery.eq('current_session', s).order('name');
+      }
+      const { data: users } = await usersQuery;
+
+      let attQuery = supabaseClient.from('attendance').select('id, user_id, impression, created_at').eq('week', w);
+      if (g === 'Eğitim') {
+        attQuery = attQuery.eq('session_name', s);
+      } else {
+        attQuery = attQuery.eq('session_name', 'Antrenman');
+      }
+      const { data: att } = await attQuery;
       
       const listEl = document.getElementById('yoklamaList');
       listEl.innerHTML = '';
       
-      if(users.length === 0) { listEl.innerHTML = "<div style='text-align:center;'>Bu seansta kayıtlı üye yok.</div>"; return; }
+      if(!users || users.length === 0) { 
+        listEl.innerHTML = `<div style='text-align:center;'>${g === 'Antrenman' ? 'Antrenman grubunda kayıtlı üye yok.' : 'Bu seansta kayıtlı üye yok.'}</div>`; 
+        return; 
+      }
 
       users.forEach(u => {
-        const isHere = attMap.hasOwnProperty(u.id);
-        const savedImp = attMap[u.id];
+        const userWeekAtts = (att || []).filter(a => a.user_id === u.id);
+        let todayAtt = null;
+        if (g === 'Antrenman') {
+          todayAtt = userWeekAtts.find(a => isSameLocalDay(a.created_at)) || null;
+        } else {
+          todayAtt = userWeekAtts[0] || null;
+        }
+
+        const isHereToday = !!todayAtt;
+        const hasWeekAtt = userWeekAtts.length > 0;
+        const prevDaysCount = isHereToday ? userWeekAtts.length - 1 : userWeekAtts.length;
+
+        const impObj = userWeekAtts.find(a => a.impression === 'like' || a.impression === 'dislike');
+        const savedImp = impObj ? impObj.impression : null;
+        userImpressions[u.id] = savedImp;
+
         const bText = u.bow_size ? `(${u.bow_size})` : "";
+        const weekBadge = (g === 'Antrenman' && userWeekAtts.length > 0) ? ` <span style="font-size:11px; color:var(--success-color); font-weight:bold;">[Bu hafta: ${userWeekAtts.length}]</span>` : "";
         const safeName = escapeHTML(u.name);
         const safeBowText = escapeHTML(bText);
+        const searchStr = escapeHTML(`${u.name} ${u.nickname || ''}`.toLocaleLowerCase('tr-TR'));
 
         listEl.innerHTML += `
-          <div style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--disabled-bg); align-items:center;">
-            <span style="font-size:14px; margin-right:5px;"><b>${safeName}</b> <span style="font-size:12px;color:var(--disabled-color);">${safeBowText}</span></span>
+          <div id="yoklama_row_${u.id}" class="yoklama-user-row" data-search="${searchStr}" data-has-week-att="${hasWeekAtt}" data-prev-week-count="${prevDaysCount}" style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--disabled-bg); align-items:center;">
+            <span style="font-size:14px; margin-right:5px;"><b>${safeName}</b> <span style="font-size:12px;color:var(--disabled-color);">${safeBowText}</span><span id="week_badge_${u.id}">${weekBadge}</span></span>
             <div style="display:flex; gap:6px; align-items:center;">
-              <button id="like_${u.id}" class="imp-btn" style="${isHere && savedImp==='like' ? 'background:var(--success-color);' : ''}" onclick="toggleImp(this, '${u.id}', 'like')" ${isHere ? 'disabled' : ''}>👍</button>
-              <button id="dislike_${u.id}" class="imp-btn" style="${isHere && savedImp==='dislike' ? 'background:var(--danger-color);' : ''}" onclick="toggleImp(this, '${u.id}', 'dislike')" ${isHere ? 'disabled' : ''}>👎</button>
-              <button class="action-btn ${isHere ? 'btn-current' : 'btn-available'}" style="width:85px; padding:8px 5px;" data-ishere="${isHere}" onclick="toggleAttendance('${u.id}', ${w}, '${s}', this)">
-                ${isHere ? 'Geri Al' : 'Burada'}
+              <button id="like_${u.id}" class="imp-btn" style="${savedImp==='like' ? 'background:var(--success-color);' : ''}" onclick="toggleImp(this, '${u.id}', 'like', ${w}, '${s}')">👍</button>
+              <button id="dislike_${u.id}" class="imp-btn" style="${savedImp==='dislike' ? 'background:var(--danger-color);' : ''}" onclick="toggleImp(this, '${u.id}', 'dislike', ${w}, '${s}')">👎</button>
+              <button class="action-btn ${isHereToday ? 'btn-current' : 'btn-available'}" style="width:85px; padding:8px 5px;" data-ishere="${isHereToday}" data-today-att-id="${todayAtt ? todayAtt.id : ''}" onclick="toggleAttendance('${u.id}', ${w}, '${s}', this)">
+                ${isHereToday ? 'Geri Al' : 'Burada'}
               </button>
             </div>
           </div>
@@ -534,36 +613,66 @@
     async function toggleAttendance(uid, w, s, btn) {
       btn.disabled = true;
       const isHere = btn.getAttribute('data-ishere') === 'true';
+      const rowEl = document.getElementById('yoklama_row_' + uid);
+      const badgeEl = document.getElementById('week_badge_' + uid);
+      const prevCount = parseInt(rowEl.getAttribute('data-prev-week-count') || '0', 10);
 
       if (isHere) {
-        const { error } = await supabaseClient.from('attendance').delete().eq('user_id', uid).eq('week', w).eq('session_name', s);
+        const attId = btn.getAttribute('data-today-att-id');
+        let delQuery = supabaseClient.from('attendance').delete();
+        if (attId) {
+          delQuery = delQuery.eq('id', attId);
+        } else {
+          delQuery = delQuery.eq('user_id', uid).eq('week', w).eq('session_name', activeYoklamaGroup === 'Antrenman' ? 'Antrenman' : s);
+        }
+        const { error } = await delQuery;
         if (error) { showToast("Hata!", "error"); btn.disabled = false; }
         else {
           btn.setAttribute('data-ishere', 'false');
+          btn.setAttribute('data-today-att-id', '');
           btn.className = "action-btn btn-available";
           btn.innerText = "Burada";
-          
-          document.getElementById('like_' + uid).disabled = false;
-          document.getElementById('dislike_' + uid).disabled = false;
-          
-          userImpressions[uid] = null;
-          document.getElementById('like_' + uid).style.background = 'var(--disabled-bg)';
-          document.getElementById('dislike_' + uid).style.background = 'var(--disabled-bg)';
+
+          if (prevCount === 0) {
+            rowEl.setAttribute('data-has-week-att', 'false');
+            userImpressions[uid] = null;
+            document.getElementById('like_' + uid).style.background = 'var(--disabled-bg)';
+            document.getElementById('dislike_' + uid).style.background = 'var(--disabled-bg)';
+            if (badgeEl) badgeEl.innerHTML = '';
+          } else {
+            rowEl.setAttribute('data-has-week-att', 'true');
+            if (badgeEl && activeYoklamaGroup === 'Antrenman') {
+              badgeEl.innerHTML = ` <span style="font-size:11px; color:var(--success-color); font-weight:bold;">[Bu hafta: ${prevCount}]</span>`;
+            }
+          }
           
           showToast("Yoklama geri alındı.", "info");
           btn.disabled = false;
         }
       } else {
         const imp = userImpressions[uid] || null;
-        const { error } = await supabaseClient.from('attendance').insert([{ user_id: uid, week: w, session_name: s, impression: imp }]);
+        const sessVal = activeYoklamaGroup === 'Antrenman' ? 'Antrenman' : s;
+        const { data: inserted, error } = await supabaseClient
+          .from('attendance')
+          .insert([{ user_id: uid, week: w, session_name: sessVal, impression: imp }])
+          .select('id')
+          .single();
+
         if (error) { showToast("Hata!", "error"); btn.disabled = false; }
-        else { 
+        else {
+          if (activeYoklamaGroup === 'Antrenman' && prevCount > 0) {
+            await supabaseClient.from('attendance').update({ impression: imp }).eq('user_id', uid).eq('week', w);
+          }
+
           btn.setAttribute('data-ishere', 'true');
+          btn.setAttribute('data-today-att-id', inserted ? inserted.id : '');
           btn.className = "action-btn btn-current";
           btn.innerText = "Geri Al";
-          
-          document.getElementById('like_' + uid).disabled = true;
-          document.getElementById('dislike_' + uid).disabled = true;
+          rowEl.setAttribute('data-has-week-att', 'true');
+
+          if (badgeEl && activeYoklamaGroup === 'Antrenman') {
+            badgeEl.innerHTML = ` <span style="font-size:11px; color:var(--success-color); font-weight:bold;">[Bu hafta: ${prevCount + 1}]</span>`;
+          }
           
           showToast("Eklendi!"); 
           btn.disabled = false;
@@ -595,9 +704,14 @@
       
       users.sort((a, b) => {
          if (currentYoklamaSort === 'yoklama') {
-            const aCount = att.filter(x => x.user_id === a.id).length;
-            const bCount = att.filter(x => x.user_id === b.id).length;
-            return bCount - aCount || a.name.localeCompare(b.name, 'tr-TR');
+            const aAtts = att.filter(x => x.user_id === a.id);
+            const bAtts = att.filter(x => x.user_id === b.id);
+            if (type === 'Antrenman') {
+              const aWeeks = new Set(aAtts.map(x => x.week)).size;
+              const bWeeks = new Set(bAtts.map(x => x.week)).size;
+              return bAtts.length - aAtts.length || bWeeks - aWeeks || a.name.localeCompare(b.name, 'tr-TR');
+            }
+            return bAtts.length - aAtts.length || a.name.localeCompare(b.name, 'tr-TR');
          }
          if (currentYoklamaSort === 'seans' && type === 'Eğitim') {
             const sList = config.egitim.sessions;
@@ -638,11 +752,29 @@
           <td><input type="text" class="bow-input" value="${safeBow}" onchange="adminUpdateBow('${u.id}', this.value)"></td>
           <td style="text-align:left; white-space:nowrap;">${safeName}${defText}</td>`;
         for(let i=1; i<=10; i++) {
-          const has = uAtt.find(a => a.week == i);
-          const impText = has ? (has.impression === 'like' ? '+' : has.impression === 'dislike' ? '-' : '') : '';
-          html += `<td><div class="att-box ${has ? 'att-yes' : 'att-no'}">${impText}</div></td>`;
+          const weekAtts = uAtt.filter(a => a.week == i);
+          const wCount = weekAtts.length;
+          if (wCount === 0) {
+            html += `<td><div class="att-box att-no"></div></td>`;
+          } else {
+            const impObj = weekAtts.find(a => a.impression === 'like' || a.impression === 'dislike');
+            const imp = impObj ? impObj.impression : null;
+            const sign = imp === 'like' ? '+' : imp === 'dislike' ? '-' : '';
+            let boxText = '';
+            if (wCount === 1) {
+              boxText = sign;
+            } else {
+              boxText = sign ? `${sign} ${wCount}` : `${wCount}`;
+            }
+            html += `<td><div class="att-box att-yes">${boxText}</div></td>`;
+          }
         }
-        html += `<td><b>${count}/10</b></td></tr>`;
+        if (type === 'Antrenman') {
+          const distinctWeeks = new Set(uAtt.map(a => a.week)).size;
+          html += `<td style="white-space:nowrap;"><b>${count} - ${distinctWeeks}/10</b></td></tr>`;
+        } else {
+          html += `<td><b>${count}/10</b></td></tr>`;
+        }
       });
       html += `</table>`;
       document.getElementById('tabloIcerik').innerHTML = html;
