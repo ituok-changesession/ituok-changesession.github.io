@@ -546,7 +546,7 @@
         area.innerHTML = `<h3>Yoklama: ${w}. Hafta | ${s}</h3><div id="yoklamaList" style="display:flex; flex-direction:column; gap:10px;">Yükleniyor...</div>`;
       }
       
-      let usersQuery = supabaseClient.from('users').select('id, name, nickname, name_lower, bow_size');
+      let usersQuery = supabaseClient.from('users').select('id, name, nickname, name_lower');
       if (g === 'Antrenman') {
         usersQuery = usersQuery.eq('user_group', 'Antrenman').order('name');
       } else {
@@ -554,7 +554,6 @@
       }
       const { data: users } = await usersQuery;
 
-      // Antrenman grubunda eski seans isimli kayıtların da sayılması için session_name filtresi sadece Eğitim'de uygulanır
       let attQuery = supabaseClient.from('attendance').select('id, user_id, impression, created_at').eq('week', w);
       if (g === 'Eğitim') {
         attQuery = attQuery.eq('session_name', s);
@@ -586,15 +585,13 @@
         const savedImp = impObj ? impObj.impression : null;
         userImpressions[u.id] = savedImp;
 
-        const bText = u.bow_size ? `(${u.bow_size})` : "";
         const weekBadge = (g === 'Antrenman' && userWeekAtts.length > 0) ? ` <span style="font-size:11px; color:var(--success-color); font-weight:bold;">[Bu hafta: ${userWeekAtts.length}]</span>` : "";
         const safeName = escapeHTML(u.name);
-        const safeBowText = escapeHTML(bText);
         const searchStr = escapeHTML(`${u.name} ${u.nickname || ''}`.toLocaleLowerCase('tr-TR'));
 
         listEl.innerHTML += `
           <div id="yoklama_row_${u.id}" class="yoklama-user-row" data-search="${searchStr}" data-has-week-att="${hasWeekAtt}" data-prev-week-count="${prevDaysCount}" style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px; border-radius:6px; border:1px solid var(--disabled-bg); align-items:center;">
-            <span style="font-size:14px; margin-right:5px;"><b>${safeName}</b> <span style="font-size:12px;color:var(--disabled-color);">${safeBowText}</span><span id="week_badge_${u.id}">${weekBadge}</span></span>
+            <span style="font-size:14px; margin-right:5px;"><b>${safeName}</b><span id="week_badge_${u.id}">${weekBadge}</span></span>
             <div style="display:flex; gap:6px; align-items:center;">
               <button id="like_${u.id}" class="imp-btn" style="${savedImp==='like' ? 'background:var(--success-color);' : ''}" onclick="toggleImp(this, '${u.id}', 'like', ${w}, '${s}')">👍</button>
               <button id="dislike_${u.id}" class="imp-btn" style="${savedImp==='dislike' ? 'background:var(--danger-color);' : ''}" onclick="toggleImp(this, '${u.id}', 'dislike', ${w}, '${s}')">👎</button>
