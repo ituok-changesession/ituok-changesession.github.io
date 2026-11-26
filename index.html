@@ -485,7 +485,6 @@
       loadUserSessions();
     }
 
-    // Anlık Like / Dislike Seçimi ve Veritabanı Güncellemesi (Burada basıldıktan sonra da çalışır)
     async function toggleImp(btn, uid, type, w, s) {
       const otherType = type === 'like' ? 'dislike' : 'like';
       const otherBtn = document.getElementById(otherType + '_' + uid);
@@ -503,7 +502,6 @@
          otherBtn.style.background = 'var(--disabled-bg)';
       }
 
-      // Kullanıcının bu hafta kaydı varsa (bugün veya hafta içi önceki gün) veritabanında anında güncelle
       if (rowEl && rowEl.getAttribute('data-has-week-att') === 'true') {
         let query = supabaseClient.from('attendance').update({ impression: newImp }).eq('user_id', uid).eq('week', w);
         if (activeYoklamaGroup === 'Eğitim') {
@@ -556,11 +554,10 @@
       }
       const { data: users } = await usersQuery;
 
+      // Antrenman grubunda eski seans isimli kayıtların da sayılması için session_name filtresi sadece Eğitim'de uygulanır
       let attQuery = supabaseClient.from('attendance').select('id, user_id, impression, created_at').eq('week', w);
       if (g === 'Eğitim') {
         attQuery = attQuery.eq('session_name', s);
-      } else {
-        attQuery = attQuery.eq('session_name', 'Antrenman');
       }
       const { data: att } = await attQuery;
       
@@ -623,7 +620,10 @@
         if (attId) {
           delQuery = delQuery.eq('id', attId);
         } else {
-          delQuery = delQuery.eq('user_id', uid).eq('week', w).eq('session_name', activeYoklamaGroup === 'Antrenman' ? 'Antrenman' : s);
+          delQuery = delQuery.eq('user_id', uid).eq('week', w);
+          if (activeYoklamaGroup === 'Eğitim') {
+            delQuery = delQuery.eq('session_name', s);
+          }
         }
         const { error } = await delQuery;
         if (error) { showToast("Hata!", "error"); btn.disabled = false; }
